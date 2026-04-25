@@ -1,12 +1,39 @@
-fastapi
-uvicorn[standard]
-sqlalchemy
-psycopg2-binary
-python-multipart
-python-jose[cryptography]
-passlib[bcrypt]
-pydantic
-pydantic-settings
-alembic
-jinja2
-aiofiles
+# ──────────────────────────────────────────────────────────────────────
+# Shining Horizon backend — pinned production requirements
+# ──────────────────────────────────────────────────────────────────────
+# Install with:
+#   pip install -r requirements.txt
+#
+# Versions are pinned to the exact builds that were tested in development
+# (2026-04). Use `pip install --upgrade` only after re-running the test
+# sweep in docs/TASKS.md verification steps.
+# ──────────────────────────────────────────────────────────────────────
+
+# ── Web framework ──
+fastapi==0.115.0
+uvicorn[standard]==0.40.0           # ASGI server. [standard] adds httptools + uvloop on Linux.
+
+# ── Data layer ──
+SQLAlchemy==2.0.45
+alembic==1.12.0                     # Schema migrations
+psycopg2-binary==2.9.11             # PostgreSQL driver (used when DATABASE_URL points at PG)
+
+# ── Validation / config ──
+pydantic==2.12.3
+pydantic-settings==2.11.0
+email-validator==2.0.0              # Required by pydantic EmailStr fields
+
+# ── Auth / security ──
+python-jose[cryptography]==3.5.0    # JWT signing for session cookies
+passlib[bcrypt]==1.7.4              # Password hashing wrapper
+bcrypt==4.0.1                       # Pinned: 4.1+ broke passlib.bcrypt back-compat
+itsdangerous==2.2.0                 # Signed cookie helpers
+slowapi==0.1.9                      # Rate limiter for /api/auth/login
+
+# ── Templates / IO ──
+Jinja2==3.1.2
+python-multipart==0.0.6             # multipart/form-data parsing for uploads
+aiofiles==25.1.0
+
+# ── Image pipeline ──
+Pillow==12.1.1                      # Generates thumb/card/hero WebP variants on upload

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Log - Shining Horizon Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-header"><div class="sidebar-logo">Shining <span>Horizon</span></div></div>
+        <nav class="sidebar-nav">
+            <a href="index.html" class="nav-item">Dashboard</a>
+            <div class="nav-section">Catalog</div>
+            <a href="categories.html" class="nav-item">Categories</a>
+            <a href="subcategories.html" class="nav-item">Subcategories</a>
+            <a href="products.html" class="nav-item">Products</a>
+            <a href="brands.html" class="nav-item">Brands</a>
+            <a href="import.html" class="nav-item" data-permission="delete">Import Data</a>
+            <div class="nav-section">System</div>
+            <a href="users.html" class="nav-item" data-permission="users">Users</a>
+            <a href="audit.html" class="nav-item active" data-permission="audit">Audit Log</a>
+            <a href="#" class="nav-item" onclick="event.preventDefault(); authAPI.logout()">Logout</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="header">
+            <div class="header-left"><h1 class="header-title">Audit Log</h1></div>
+            <div class="header-right">
+                <div class="user-menu">
+                    <div class="user-avatar">A</div>
+                    <div class="user-info"><div class="user-name">Admin</div><div class="user-role">Super Admin</div></div>
+                </div>
+            </div>
+        </header>
+
+        <div class="page-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title" id="results-title">All Activity</h3>
+                </div>
+                <div class="card-body">
+                    <div class="filters">
+                        <select id="filter-entity" class="filter-select" onchange="reload()">
+                            <option value="">All Entities</option>
+                            <option value="category">Categories</option>
+                            <option value="subcategory">Subcategories</option>
+                            <option value="product">Products</option>
+                            <option value="brand">Brands</option>
+                        </select>
+                        <select id="filter-action" class="filter-select" onchange="reload()">
+                            <option value="">All Actions</option>
+                            <option value="create">Create</option>
+                            <option value="update">Update</option>
+                            <option value="publish">Publish</option>
+                            <option value="unpublish">Unpublish</option>
+                            <option value="delete">Delete</option>
+                        </select>
+                        <button class="btn btn-sm btn-secondary" onclick="reload()">Refresh</button>
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>When</th>
+                                    <th>Who</th>
+                                    <th>Action</th>
+                                    <th>Entity</th>
+                                    <th>Target</th>
+                                    <th>Changes</th>
+                                    <th>IP</th>
+                                </tr>
+                            </thead>
+                            <tbody id="audit-table">
+                                <tr><td colspan="7"><div class="loading"><div class="spinner"></div></div></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="pagination" style="display:flex; align-items:center; justify-content:space-between; margin-top:14px;">
+                        <small id="pagination-info" style="color:#64748b;"></small>
+                        <div style="display:flex; gap: 6px;">
+                            <button class="btn btn-sm btn-secondary" id="pg-prev" onclick="goPage(-1)">Previous</button>
+                            <button class="btn btn-sm btn-secondary" id="pg-next" onclick="goPage(1)">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/utils.js"></script>
+    <script>
+        if (!requireAuth()) {}
+
+        let pageSize = 50;
+        let pageSkip = 0;
+        let total = 0;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            initUserInfo();
+            applyRoleGates();
+            const u = getCachedUser();
+            if (!u || u.role !== 'super_admin') {
+                document.querySelector('.page-content').innerHTML =
+                    '<div class="card"><div class="card-body"><h3>Access denied</h3><p style="color:#64748b">The audit log is available to super admins only.</p></div></div>';
+                return;
+            }
+            await reload();
+        });
+
+        async function reload() {
+            const params = {
+                entity_type: document.getElementById('filter-entity').value || null,
+                action: document.getElementById('filter-action').value || null,
+                skip: pageSkip,
+                limit: pageSize,
+            };
+            const tbody = document.getElementById('audit-table');
+            tbody.innerHTML = '<tr><td colspan="7"><div class="loading"><div class="spinner"></div></div></td></tr>';
+            try {
+                const res = await auditAPI.list(params);
+                total = res.total || 0;
+                renderRows(res.items || []);
+                renderPagination();
+                document.getElementById('results-title').textContent =
+                    total ? `${total.toLocaleString()} entries` : 'All Activity';
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="7" style="color:#b91c1c">${escapeHtml(e.message)}</td></tr>`;
+            }
+        }
+
+        function renderRows(items) {
+            const tbody = document.getElementById('audit-table');
+            if (!items.length) { showEmptyState(tbody, 'No activity yet'); return; }
+            tbody.innerHTML = items.map(it => `
+                <tr>
+                    <td><small style="color:#64748b">${formatTimestamp(it.created_at)}</small></td>
+                    <td>${escapeHtml(it.username || '—')}</td>
+                    <td><span class="badge ${actionBadge(it.action)}">${escapeHtml(it.action)}</span></td>
+                    <td>${escapeHtml(it.entity_type)} <small style="color:#64748b">#${it.entity_id ?? '—'}</small></td>
+                    <td>${escapeHtml(it.entity_label || '—')}</td>
+                    <td>${renderChanges(it.changes)}</td>
+                    <td><small style="color:#64748b">${escapeHtml(it.ip_address || '—')}</small></td>
+                </tr>
+            `).join('');
+        }
+
+        function actionBadge(action) {
+            switch (action) {
+                case 'create': return 'badge-success';
+                case 'delete': return 'badge-danger';
+                case 'publish': return 'badge-info';
+                case 'unpublish': return 'badge-warning';
+                default: return 'badge-warning';
+            }
+        }
+
+        function renderChanges(changes) {
+            if (!changes || typeof changes !== 'object' || Object.keys(changes).length === 0) return '<small style="color:#94a3b8">—</small>';
+            const parts = Object.keys(changes).map(k => {
+                const [from, to] = changes[k];
+                return `<div><span class="key">${escapeHtml(k)}</span>: <span class="from">${escapeHtml(formatVal(from))}</span> → <span class="to">${escapeHtml(formatVal(to))}</span></div>`;
+            });
+            return `<div class="audit-changes">${parts.join('')}</div>`;
+        }
+
+        function formatVal(v) {
+            if (v === null || v === undefined) return '∅';
+            if (typeof v === 'string') return v.length > 60 ? v.slice(0, 57) + '…' : v;
+            return JSON.stringify(v);
+        }
+
+        function formatTimestamp(iso) {
+            if (!iso) return '—';
+            const d = new Date(iso);
+            return d.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+        }
+
+        function renderPagination() {
+            const info = document.getElementById('pagination-info');
+            const prev = document.getElementById('pg-prev');
+            const next = document.getElementById('pg-next');
+            const start = total ? pageSkip + 1 : 0;
+            const end = Math.min(pageSkip + pageSize, total);
+            info.textContent = total ? `Showing ${start.toLocaleString()}–${end.toLocaleString()} of ${total.toLocaleString()}` : '';
+            prev.disabled = pageSkip <= 0;
+            next.disabled = end >= total;
+        }
+
+        function goPage(direction) {
+            pageSkip = Math.max(0, pageSkip + direction * pageSize);
+            reload();
+        }
+    </script>
+</body>
+</html>

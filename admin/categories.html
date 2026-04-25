@@ -5,88 +5,72 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Categories - Shining Horizon Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="/static/logo/Shinning_Horizon_logo.png" type="image/png">
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
-    <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="admin-sidebar">
         <div class="sidebar-header">
-            <div class="sidebar-logo">Shining <span>Horizon</span></div>
+            <a href="index.html"><img src="/static/logo/Shinning_Horizon_logo.png" alt="Shining Horizon" class="sidebar-logo-img"></a>
+            <button class="sidebar-close-btn" onclick="toggleSidebar()" aria-label="Collapse sidebar" title="Collapse sidebar">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
+            </button>
         </div>
         <nav class="sidebar-nav">
-            <a href="index.html" class="nav-item" data-page="dashboard">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                Dashboard
-            </a>
+            <a href="index.html" class="nav-item">Dashboard</a>
             <div class="nav-section">Catalog</div>
-            <a href="categories.html" class="nav-item active" data-page="categories">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                Categories
-            </a>
-            <a href="subcategories.html" class="nav-item" data-page="subcategories">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
-                Subcategories
-            </a>
-            <a href="products.html" class="nav-item" data-page="products">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-                Products
-            </a>
-            <a href="brands.html" class="nav-item" data-page="brands">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                Brands
-            </a>
+            <a href="categories.html" class="nav-item active">Categories</a>
+            <a href="subcategories.html" class="nav-item">Subcategories</a>
+            <a href="products.html" class="nav-item">Products</a>
+            <a href="brands.html" class="nav-item">Brands</a>
+            <a href="import.html" class="nav-item" data-permission="delete">Import Data</a>
             <div class="nav-section">System</div>
-            <a href="users.html" class="nav-item" data-page="users">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                Users
-            </a>
-            <a href="#" class="nav-item" onclick="authAPI.logout()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-                Logout
-            </a>
+            <a href="users.html" class="nav-item" data-permission="users">Users</a>
+            <a href="audit.html" class="nav-item" data-permission="audit">Audit Log</a>
+            <a href="#" class="nav-item" onclick="event.preventDefault(); authAPI.logout()">Logout</a>
         </nav>
     </aside>
-    
-    <!-- Main Content -->
+
     <main class="main-content">
         <header class="header">
-            <div class="header-left">
-                <h1 class="header-title">Categories</h1>
+            <div class="header-left">                <h1 class="header-title">Categories</h1>
             </div>
             <div class="header-right">
                 <div class="user-menu">
                     <div class="user-avatar">A</div>
-                    <div class="user-info">
-                        <div class="user-name">Admin</div>
-                        <div class="user-role">Super Admin</div>
-                    </div>
+                    <div class="user-info"><div class="user-name">Admin</div><div class="user-role">Super Admin</div></div>
                 </div>
             </div>
         </header>
-        
+
         <div class="page-content">
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">All Categories</h3>
                     <button class="btn btn-primary" onclick="openAddModal()">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                        </svg>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         Add Category
                     </button>
                 </div>
                 <div class="card-body">
+                    <div class="filters" style="margin-bottom: 12px;">
+                        <select id="filter-status" class="filter-select" onchange="loadCategories()">
+                            <option value="">All Statuses</option>
+                            <option value="published">Published</option>
+                            <option value="draft">Draft</option>
+                        </select>
+                    </div>
                     <div class="table-container">
-                        <table>
+                        <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Image</th>
-                                    <th>Name</th>
-                                    <th>Type</th>
-                                    <th>Products</th>
-                                    <th>Subcategories</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
+                                    <th class="col-img" style="width:8%;">Image</th>
+                                    <th style="width:20%;">Name</th>
+                                    <th style="width:10%;">Type</th>
+                                    <th class="num" style="width:12%;">Products</th>
+                                    <th class="num" style="width:11%;">Subcats</th>
+                                    <th style="width:12%;">Status</th>
+                                    <th style="width:27%;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="categories-table">
@@ -98,79 +82,96 @@
             </div>
         </div>
     </main>
-    
-    <!-- Add/Edit Modal -->
+
     <div class="modal-overlay" id="category-modal">
-        <div class="modal">
+        <div class="modal" style="max-width: 720px;">
             <div class="modal-header">
                 <h3 class="modal-title" id="modal-title">Add Category</h3>
-                <button class="modal-close" onclick="closeModal('category-modal')">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <a id="preview-link" class="preview-link" target="_blank" rel="noopener" style="display:none">Preview ↗</a>
+                    <button class="modal-close" onclick="closeModal('category-modal')">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
             </div>
             <form id="category-form" onsubmit="saveCategory(event)">
                 <div class="modal-body">
                     <input type="hidden" name="id" id="category-id">
-                    
-                    <div class="form-group">
-                        <label class="form-label">Name *</label>
-                        <input type="text" name="name" class="form-input" required>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group">
+                            <label class="form-label">Name *</label>
+                            <input type="text" name="name" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Status *</label>
+                            <select name="status" class="form-select" required>
+                                <option value="draft">Draft</option>
+                                <option value="published">Published</option>
+                            </select>
+                        </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Type *</label>
                         <select name="type" class="form-select" required>
-                            <option value="simple">Simple (Direct products like Tools)</option>
-                            <option value="detailed">Detailed (Has subcategories like Automation)</option>
+                            <option value="simple">Simple (direct product list, e.g. Tools)</option>
+                            <option value="detailed">Detailed (has subcategories, e.g. Automation)</option>
                         </select>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Description</label>
                         <input type="text" name="description" class="form-input" placeholder="Short description for cards">
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Hero Title</label>
                         <input type="text" name="hero_title" class="form-input" placeholder="Title shown on category page">
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Hero Description</label>
                         <textarea name="hero_description" class="form-textarea" placeholder="Description shown on category page"></textarea>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Category Image</label>
                         <div class="image-upload" onclick="document.getElementById('image-input').click()">
                             <input type="file" id="image-input" accept="image/*" onchange="handleImageUpload(this)">
                             <div id="image-preview">
-                                <svg width="40" height="40" fill="none" stroke="#9ca3af" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                </svg>
+                                <svg width="40" height="40" fill="none" stroke="#9ca3af" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                 <p style="margin-top: 8px; color: #64748b; font-size: 0.875rem;">Click to upload image</p>
                             </div>
                         </div>
                         <input type="hidden" name="image" id="image-path">
                     </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Display Order</label>
-                        <input type="number" name="display_order" class="form-input" value="0">
+
+                    <div class="form-section">
+                        <h4>SEO</h4>
+                        <div class="form-group">
+                            <label class="form-label">Meta Title</label>
+                            <input type="text" name="meta_title" class="form-input" maxlength="160" placeholder="Defaults to category name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Meta Description</label>
+                            <textarea name="meta_description" class="form-textarea" maxlength="320" placeholder="Defaults to description"></textarea>
+                        </div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">
-                            <input type="checkbox" name="is_active" checked> Active
-                        </label>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">
-                            <input type="checkbox" name="show_on_home" checked> Show on Home Page
-                        </label>
+
+                    <div class="form-section">
+                        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                            <div class="form-group">
+                                <label class="form-label">Display Order</label>
+                                <input type="number" name="display_order" class="form-input" value="0">
+                            </div>
+                            <div class="form-group" style="display:flex; align-items:flex-end;">
+                                <label class="form-label"><input type="checkbox" name="is_active" checked> Active</label>
+                            </div>
+                            <div class="form-group" style="display:flex; align-items:flex-end;">
+                                <label class="form-label"><input type="checkbox" name="show_on_home" checked> Show on Home</label>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -180,154 +181,157 @@
             </form>
         </div>
     </div>
-    
+
     <div id="toast-container" class="toast-container"></div>
-    
+
+    <script src="assets/js/auth.js"></script>
     <script src="assets/js/api.js"></script>
     <script src="assets/js/utils.js"></script>
     <script>
         if (!requireAuth()) {}
-        
+
         let categories = [];
-        
+
         document.addEventListener('DOMContentLoaded', async () => {
             initUserInfo();
+            applyRoleGates();
             await loadCategories();
         });
-        
+
         async function loadCategories() {
             try {
-                categories = await categoriesAPI.getAll(true);
+                const status = document.getElementById('filter-status').value || null;
+                categories = await categoriesAPI.getAll({ status });
                 renderCategories();
             } catch (error) {
-                showToast('Failed to load categories', 'error');
+                showToast('Failed to load categories: ' + error.message, 'error');
             }
         }
-        
+
         function renderCategories() {
             const tbody = document.getElementById('categories-table');
-            
             if (categories.length === 0) {
                 showEmptyState(tbody, 'No categories found');
                 return;
             }
-            
-            tbody.innerHTML = categories.map(cat => `
+            tbody.innerHTML = categories.map(cat => {
+                const viewHref = previewUrl('category', cat.slug, cat.status);
+                const viewLabel = cat.status === 'published' ? 'View' : 'Preview';
+                return `
                 <tr>
-                    <td>
-                        ${cat.image 
-                            ? `<img src="../${cat.image}" class="image-preview" alt="${escapeHtml(cat.name)}">`
-                            : '<div class="image-preview" style="background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #94a3b8;">No img</div>'
-                        }
+                    <td class="col-img">
+                        ${cat.image
+                            ? `<img src="${adminImageUrl(cat.image, 'thumb')}" class="image-preview" alt="${escapeHtml(cat.name)}">`
+                            : '<div class="image-preview" style="background:#f1f5f9; display:flex; align-items:center; justify-content:center; color:#94a3b8;">No img</div>'}
                     </td>
-                    <td><strong>${escapeHtml(cat.name)}</strong><br><small style="color: #64748b;">${cat.slug}</small></td>
+                    <td class="wrap"><strong>${escapeHtml(cat.name)}</strong><br><small style="color:#64748b;">${cat.slug}</small></td>
                     <td><span class="badge ${cat.type === 'detailed' ? 'badge-info' : 'badge-warning'}">${cat.type}</span></td>
-                    <td>${cat.product_count || 0}</td>
-                    <td>${cat.subcategory_count || 0}</td>
-                    <td><span class="badge ${cat.is_active ? 'badge-success' : 'badge-danger'}">${cat.is_active ? 'Active' : 'Inactive'}</span></td>
+                    <td class="num">${cat.product_count || 0}</td>
+                    <td class="num">${cat.subcategory_count || 0}</td>
+                    <td>${renderStatusPill(cat.status, cat.is_active)}</td>
                     <td>
                         <div class="table-actions">
+                            <a href="${viewHref}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary" title="${cat.status === 'published' ? 'Open public page' : 'Preview draft (admin only)'}">${viewLabel}</a>
                             <button class="btn btn-sm btn-secondary" onclick="editCategory(${cat.id})">Edit</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteCategory(${cat.id})">Delete</button>
+                            ${canDelete() ? `<button class="btn btn-sm btn-danger" onclick="deleteCategory(${cat.id})">Delete</button>` : ''}
                         </div>
                     </td>
                 </tr>
-            `).join('');
+            `;}).join('');
         }
-        
+
+        function blankPreview() {
+            return `
+                <svg width="40" height="40" fill="none" stroke="#9ca3af" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <p style="margin-top: 8px; color: #64748b; font-size: 0.875rem;">Click to upload image</p>
+            `;
+        }
+
         function openAddModal() {
             document.getElementById('modal-title').textContent = 'Add Category';
             resetForm('category-form');
             document.getElementById('category-id').value = '';
             document.getElementById('image-path').value = '';
-            document.getElementById('image-preview').innerHTML = `
-                <svg width="40" height="40" fill="none" stroke="#9ca3af" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
-                <p style="margin-top: 8px; color: #64748b; font-size: 0.875rem;">Click to upload image</p>
-            `;
+            document.getElementById('image-preview').innerHTML = blankPreview();
+            document.getElementById('preview-link').style.display = 'none';
+            document.querySelector('select[name="status"]').value = 'draft';
             openModal('category-modal');
         }
-        
+
         function editCategory(id) {
             const cat = categories.find(c => c.id === id);
             if (!cat) return;
-            
+
             document.getElementById('modal-title').textContent = 'Edit Category';
             document.getElementById('category-id').value = cat.id;
             document.getElementById('image-path').value = cat.image || '';
-            
+
             const preview = document.getElementById('image-preview');
             if (cat.image) {
-                preview.innerHTML = `<img src="../${cat.image}" style="max-width: 100%; max-height: 150px; border-radius: 8px;">`;
+                preview.innerHTML = `<img src="${adminImageUrl(cat.image, 'card')}" style="max-width:100%; max-height:150px; border-radius:8px;">`;
             } else {
-                preview.innerHTML = `
-                    <svg width="40" height="40" fill="none" stroke="#9ca3af" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                    <p style="margin-top: 8px; color: #64748b; font-size: 0.875rem;">Click to upload image</p>
-                `;
+                preview.innerHTML = blankPreview();
             }
-            
+
             fillForm('category-form', cat);
+
+            const link = document.getElementById('preview-link');
+            link.href = previewUrl('category', cat.slug, cat.status);
+            link.textContent = cat.status === 'published' ? 'View ↗' : 'Preview draft ↗';
+            link.style.display = '';
+
             openModal('category-modal');
         }
-        
+
         async function saveCategory(e) {
             e.preventDefault();
-            
             const id = document.getElementById('category-id').value;
             const data = getFormData('category-form');
             delete data.id;
-            
-            // Add image path if uploaded
+
             const imagePath = document.getElementById('image-path').value;
-            if (imagePath) {
-                data.image = imagePath;
-            }
-            
+            if (imagePath) data.image = imagePath;
+            // Empty meta fields should clear, not stay as "" — convert to null.
+            ['meta_title', 'meta_description'].forEach(k => {
+                if (data[k] === '' || data[k] === undefined) delete data[k];
+            });
+
             try {
                 if (id) {
                     await categoriesAPI.update(id, data);
-                    showToast('Category updated successfully');
+                    showToast('Category updated');
                 } else {
                     await categoriesAPI.create(data);
-                    showToast('Category created successfully');
+                    showToast('Category created');
                 }
-                
                 closeModal('category-modal');
                 await loadCategories();
             } catch (error) {
                 showToast(error.message, 'error');
             }
         }
-        
+
         async function handleImageUpload(input) {
             const file = input.files[0];
             if (!file) return;
-            
             const preview = document.getElementById('image-preview');
             preview.innerHTML = '<div class="spinner"></div>';
-            
             try {
                 const result = await uploadAPI.uploadImage(file, 'categories');
                 document.getElementById('image-path').value = result.path;
-                preview.innerHTML = `<img src="../${result.path}" style="max-width: 100%; max-height: 150px; border-radius: 8px;">`;
+                preview.innerHTML = `<img src="${adminImageUrl(result.path, 'card')}" style="max-width:100%; max-height:150px; border-radius:8px;">`;
                 showToast('Image uploaded');
             } catch (error) {
-                preview.innerHTML = `<p style="color: #dc2626;">Upload failed: ${error.message}</p>`;
+                preview.innerHTML = `<p style="color:#dc2626;">Upload failed: ${error.message}</p>`;
                 showToast('Upload failed', 'error');
             }
         }
-        
+
         async function deleteCategory(id) {
-            if (!await confirmDialog('Are you sure you want to delete this category? All products in this category will also be deleted.')) {
-                return;
-            }
-            
+            if (!await confirmDialog('Delete this category? All products in it will also be deleted.')) return;
             try {
                 await categoriesAPI.delete(id);
-                showToast('Category deleted successfully');
+                showToast('Category deleted');
                 await loadCategories();
             } catch (error) {
                 showToast(error.message, 'error');

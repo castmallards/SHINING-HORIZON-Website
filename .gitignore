@@ -1,0 +1,48 @@
+# ── Python ────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# ── Virtualenvs ───────────────────────────────────────────────────
+backend/venv/
+venv/
+env/
+.venv/
+
+# ── Environment ───────────────────────────────────────────────────
+.env
+backend/.env
+*.env.local
+
+# ── Database (local dev) ──────────────────────────────────────────
+# Production DB is backed up separately. Local SQLite is rebuildable.
+backend/shining_horizon.db
+backend/*.db-journal
+backend/*.db-wal
+backend/*.db-shm
+backend/*.db.backup-*
+backend/*.db.pre_*_backup
+
+# ── Uploads (user-generated content, not code) ────────────────────
+backend/uploads/
+
+# ── IDE / OS ──────────────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ── Build artefacts ───────────────────────────────────────────────
+dist/
+build/
+*.log
+
+# ── Generated docs ────────────────────────────────────────────────
+*.pdf
+*.docx
+Shining_Horizon_Documentation.zip

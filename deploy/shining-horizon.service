@@ -1,0 +1,27 @@
+# systemd unit for the Shining Horizon backend (Phase 7.6).
+# Install: sudo cp deploy/shining-horizon.service /etc/systemd/system/
+#          sudo systemctl daemon-reload
+#          sudo systemctl enable --now shining-horizon
+
+[Unit]
+Description=Shining Horizon backend (uvicorn)
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/shining-horizon/backend
+EnvironmentFile=/opt/shining-horizon/backend/.env
+ExecStart=/opt/shining-horizon/.venv/bin/python -m uvicorn app.main:app \
+    --host 127.0.0.1 --port 8000 --workers 2 --proxy-headers --forwarded-allow-ips=127.0.0.1
+Restart=on-failure
+RestartSec=3
+
+# Hardening
+PrivateTmp=true
+ProtectSystem=full
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

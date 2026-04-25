@@ -4,10 +4,15 @@ from fastapi import HTTPException, status
 import re
 
 from ..models.product import Product
+from ..models._common import AuditAction
 from ..models.category import Category
 from ..models.subcategory import Subcategory
 from ..models.brand import Brand
 from ..schemas.product import ProductCreate, ProductUpdate
+from ..cache import invalidate_public
+from .audit import AuditService, snapshot
+
+_AUDIT_FIELDS = ("name", "slug", "part_number", "category_id", "subcategory_id", "brand_id", "status", "is_active", "is_featured", "image", "datasheet_url", "display_order")
 
 class ProductService:
     @staticmethod
@@ -50,43 +55,35 @@ class ProductService:
         return db.query(Product).filter(Product.slug == slug).first()
     
     @staticmethod
-    def create(db: Session, product_data: ProductCreate) -> Product:
-        # Check if category exists
-        category = db.query(Category).filter(Category.id == product_data.category_id).first()
-        if not category:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Category not found"
-            )
-        
-        # Check subcategory if provided
+    def create(
+        db: Session,
+        product_data: ProductCreate,
+        actor_id: Optional[int] = None,
+        ip: Optional[str] = None,
+    ) -> Product:
+        if product_data.category_id:
+            category = db.query(Category).filter(Category.id == product_data.category_id).first()
+            if not category:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
+
         if product_data.subcategory_id:
             subcategory = db.query(Subcategory).filter(Subcategory.id == product_data.subcategory_id).first()
             if not subcategory:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Subcategory not found"
-                )
-        
-        # Check brand if provided
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subcategory not found")
+
         if product_data.brand_id:
             brand = db.query(Brand).filter(Brand.id == product_data.brand_id).first()
             if not brand:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Brand not found"
-                )
-        
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Brand not found")
+
         slug = ProductService.generate_slug(product_data.name, product_data.part_number)
-        
-        # Make slug unique if exists
         existing = ProductService.get_by_slug(db, slug)
         if existing:
             count = 1
             while ProductService.get_by_slug(db, f"{slug}-{count}"):
                 count += 1
             slug = f"{slug}-{count}"
-        
+
         product = Product(
             name=product_data.name,
             slug=slug,
@@ -99,58 +96,120 @@ class ProductService:
             image=product_data.image,
             display_order=product_data.display_order,
             is_active=product_data.is_active,
-            is_featured=product_data.is_featured
+            is_featured=product_data.is_featured,
+            status=product_data.status,
+            meta_title=product_data.meta_title,
+            meta_description=product_data.meta_description,
+            datasheet_url=product_data.datasheet_url,
+            created_by_user_id=actor_id,
+            updated_by_user_id=actor_id,
         )
-        
+        if product_data.specifications:
+            product.specifications_list = [
+                s.model_dump() if hasattr(s, "model_dump") else dict(s) for s in product_data.specifications
+            ]
+        if product_data.gallery:
+            product.gallery_list = list(product_data.gallery)
+
         db.add(product)
         db.commit()
         db.refresh(product)
+        invalidate_public()
+        AuditService.log(
+            action=AuditAction.CREATE,
+            entity_type="product",
+            entity_id=product.id,
+            entity_label=product.name,
+            user_id=actor_id,
+            ip_address=ip,
+        )
         return product
-    
+
     @staticmethod
-    def update(db: Session, product_id: int, product_data: ProductUpdate) -> Product:
+    def update(
+        db: Session,
+        product_id: int,
+        product_data: ProductUpdate,
+        actor_id: Optional[int] = None,
+        ip: Optional[str] = None,
+    ) -> Product:
         product = ProductService.get_by_id(db, product_id)
         if not product:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Product not found"
-            )
-        
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+
+        before = snapshot(product, _AUDIT_FIELDS)
+        prev_status = product.status
         update_data = product_data.model_dump(exclude_unset=True)
-        
-        # Update slug if name or part_number changed
+        spec_value = update_data.pop("specifications", None)
+        gallery_value = update_data.pop("gallery", None)
+
         if "name" in update_data or "part_number" in update_data:
             name = update_data.get("name", product.name)
             part_number = update_data.get("part_number", product.part_number)
             new_slug = ProductService.generate_slug(name, part_number)
-            
             existing = ProductService.get_by_slug(db, new_slug)
             if existing and existing.id != product_id:
                 count = 1
                 while ProductService.get_by_slug(db, f"{new_slug}-{count}"):
                     count += 1
                 new_slug = f"{new_slug}-{count}"
-            
             update_data["slug"] = new_slug
-        
+
         for field, value in update_data.items():
             setattr(product, field, value)
-        
+        if spec_value is not None:
+            product.specifications_list = [
+                s.model_dump() if hasattr(s, "model_dump") else dict(s) for s in spec_value
+            ]
+        if gallery_value is not None:
+            product.gallery_list = list(gallery_value)
+        product.updated_by_user_id = actor_id
+
         db.commit()
         db.refresh(product)
+        invalidate_public()
+
+        after = snapshot(product, _AUDIT_FIELDS)
+        action = AuditAction.UPDATE
+        if "status" in update_data and product.status != prev_status:
+            cur = product.status.value if hasattr(product.status, "value") else product.status
+            action = AuditAction.PUBLISH if cur == "published" else AuditAction.UNPUBLISH
+        AuditService.log(
+            action=action,
+            entity_type="product",
+            entity_id=product.id,
+            entity_label=product.name,
+            user_id=actor_id,
+            ip_address=ip,
+            before=before,
+            after=after,
+        )
         return product
-    
+
     @staticmethod
-    def delete(db: Session, product_id: int) -> bool:
+    def delete(
+        db: Session,
+        product_id: int,
+        actor_id: Optional[int] = None,
+        ip: Optional[str] = None,
+    ) -> bool:
         product = ProductService.get_by_id(db, product_id)
         if not product:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Product not found"
-            )
-        
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+
+        label = product.name
+        pid = product.id
         db.delete(product)
         db.commit()
+        invalidate_public()
+        AuditService.log(
+            action=AuditAction.DELETE,
+            entity_type="product",
+            entity_id=pid,
+            entity_label=label,
+            user_id=actor_id,
+            ip_address=ip,
+        )
         return True
     
     @staticmethod
@@ -158,11 +217,15 @@ class ProductService:
         category = db.query(Category).filter(Category.id == product.category_id).first()
         subcategory = db.query(Subcategory).filter(Subcategory.id == product.subcategory_id).first() if product.subcategory_id else None
         brand = db.query(Brand).filter(Brand.id == product.brand_id).first() if product.brand_id else None
-        
-        return {
-            **product.__dict__,
-            "category_name": category.name if category else None,
-            "subcategory_name": subcategory.name if subcategory else None,
-            "brand_name": brand.name if brand else None,
-            "brand_logo": brand.logo if brand else None
-        }
+
+        # `product.__dict__` exposes the raw Text columns (`specifications`, `gallery`)
+        # which are JSON-encoded strings. ProductResponse declares them as List[...],
+        # so we replace them with the parsed list properties before serialising.
+        data = {k: v for k, v in product.__dict__.items() if not k.startswith("_")}
+        data["specifications"] = product.specifications_list
+        data["gallery"] = product.gallery_list
+        data["category_name"] = category.name if category else None
+        data["subcategory_name"] = subcategory.name if subcategory else None
+        data["brand_name"] = brand.name if brand else None
+        data["brand_logo"] = brand.logo if brand else None
+        return data

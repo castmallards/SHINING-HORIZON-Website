@@ -1,5 +1,38 @@
 // Utility Functions
 
+// Sidebar toggle
+function toggleSidebar() {
+    const sidebar = document.getElementById('admin-sidebar');
+    const main = document.querySelector('.main-content');
+    if (!sidebar) return;
+    const collapsed = sidebar.classList.toggle('collapsed');
+    if (main) main.classList.toggle('expanded', collapsed);
+    document.body.classList.toggle('sidebar-collapsed', collapsed);
+    try { localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0'); } catch(e) {}
+}
+(function initSidebar() {
+    document.addEventListener('DOMContentLoaded', function () {
+        // Inject the floating reopen button into the body
+        const btn = document.createElement('button');
+        btn.className = 'sidebar-reopen-btn';
+        btn.setAttribute('aria-label', 'Open sidebar');
+        btn.setAttribute('title', 'Open sidebar');
+        btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>';
+        btn.onclick = toggleSidebar;
+        document.body.appendChild(btn);
+
+        try {
+            if (localStorage.getItem('sidebarCollapsed') === '1') {
+                const sidebar = document.getElementById('admin-sidebar');
+                const main = document.querySelector('.main-content');
+                if (sidebar) sidebar.classList.add('collapsed');
+                if (main) main.classList.add('expanded');
+                document.body.classList.add('sidebar-collapsed');
+            }
+        } catch(e) {}
+    });
+})();
+
 // Show toast notification
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container') || createToastContainer();
@@ -43,13 +76,17 @@ function showLoading(container) {
 // Show empty state
 function showEmptyState(container, message = 'No items found') {
     container.innerHTML = `
-        <div class="empty-state">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
-            </svg>
-            <h3>${message}</h3>
-            <p>Click the button above to add a new item</p>
-        </div>
+        <tr>
+            <td colspan="20">
+                <div class="empty-state">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                    </svg>
+                    <h3>${message}</h3>
+                    <p>Click the button above to add a new item</p>
+                </div>
+            </td>
+        </tr>
     `;
 }
 
@@ -124,9 +161,9 @@ function initUserInfo() {
         const userNameEl = document.querySelector('.user-name');
         const userRoleEl = document.querySelector('.user-role');
         const userAvatarEl = document.querySelector('.user-avatar');
-        
+
         if (userNameEl) userNameEl.textContent = user.full_name || user.username;
-        if (userRoleEl) userRoleEl.textContent = user.role === 'super_admin' ? 'Super Admin' : 'Admin';
+        if (userRoleEl) userRoleEl.textContent = (typeof roleLabel === 'function') ? roleLabel(user.role) : user.role;
         if (userAvatarEl) userAvatarEl.textContent = (user.full_name || user.username).charAt(0).toUpperCase();
     }
 }
@@ -154,6 +191,46 @@ function handleImageUpload(inputId, previewId, callback) {
     });
 }
 
+// Translate a stored image base path into a public preview URL. Mirrors the
+// server-side variant_url() so legacy v1 paths and new v2 base paths both work.
+function adminImageUrl(path, size = 'card') {
+    if (!path) return null;
+    const p = String(path).trim();
+    if (/^(https?:|data:)/.test(p)) return p;
+    if (p.startsWith('/')) return p;
+    if (/\.(png|jpe?g|gif|webp|svg)$/i.test(p)) return '/' + p.replace(/^backend\//, '');
+    const noPrefix = p.replace(/^uploads\//, '');
+    const parts = noPrefix.split('/');
+    if (parts.length >= 2) {
+        const folder = parts[0];
+        const id = parts.slice(1).join('/');
+        return `/uploads/${folder}/${size}/${id}.webp`;
+    }
+    return '/' + p.replace(/^backend\//, '');
+}
+
+// Render the v2 status pill (Phase 4.3 / 4.4 helpers).
+function renderStatusPill(status, isActive) {
+    const s = (status || (isActive ? 'published' : 'draft')).toLowerCase();
+    const klass = s === 'published' ? 'published' : 'draft';
+    const label = s === 'published' ? 'Published' : 'Draft';
+    return `<span class="status-pill ${klass}">${label}</span>`;
+}
+
+// Open the public-facing URL of an entity in a new tab (Phase 4.11).
+function previewUrl(entity_type, slug, status) {
+    if (!slug) return null;
+    let path = null;
+    if (entity_type === 'product') path = `/product/${slug}`;
+    else if (entity_type === 'category' || entity_type === 'subcategory') path = `/category/${slug}`;
+    else if (entity_type === 'brand') path = `/brand/${slug}`;
+    if (!path) return null;
+    // Drafts are 404 to anonymous visitors — append ?preview=1 so the public
+    // route lets the authenticated admin through and shows a "PREVIEW MODE" banner.
+    if (status && status !== 'published') path += '?preview=1';
+    return path;
+}
+
 // Set active nav item
 function setActiveNav(page) {
     document.querySelectorAll('.nav-item').forEach(item => {
@@ -178,23 +255,37 @@ function populateSelect(selectId, items, valueKey = 'id', labelKey = 'name', pla
 // Get form data as object
 function getFormData(formId) {
     const form = document.getElementById(formId);
-    const formData = new FormData(form);
     const data = {};
-    
-    formData.forEach((value, key) => {
-        // Handle checkboxes
-        if (form.elements[key]?.type === 'checkbox') {
-            data[key] = form.elements[key].checked;
-        } else if (value !== '') {
-            // Convert numeric strings to numbers
-            if (!isNaN(value) && value !== '') {
-                data[key] = Number(value);
-            } else {
-                data[key] = value;
-            }
+
+    // FormData only iterates CHECKED checkboxes — unchecked ones disappear
+    // entirely, so we'd never send `false` to the API. Walk the form's own
+    // elements instead so every named field shows up exactly once.
+    Array.from(form.elements).forEach(el => {
+        if (!el.name || el.disabled) return;
+
+        if (el.type === 'checkbox') {
+            data[el.name] = el.checked;
+            return;
         }
+        if (el.type === 'radio') {
+            if (el.checked) data[el.name] = el.value;
+            return;
+        }
+        if (el.type === 'submit' || el.type === 'button' || el.type === 'reset') return;
+
+        const raw = el.value;
+        if (el.type === 'number') {
+            // Empty number → omit (let the backend keep the previous value);
+            // "0" must round-trip as 0, not be dropped.
+            if (raw === '' || raw === null) return;
+            const n = Number(raw);
+            data[el.name] = Number.isFinite(n) ? n : raw;
+            return;
+        }
+        if (raw === '') return;
+        data[el.name] = raw;
     });
-    
+
     return data;
 }
 
@@ -208,15 +299,18 @@ function resetForm(formId) {
 function fillForm(formId, data) {
     const form = document.getElementById(formId);
     if (!form) return;
-    
+
     Object.keys(data).forEach(key => {
         const element = form.elements[key];
-        if (element) {
-            if (element.type === 'checkbox') {
-                element.checked = data[key];
-            } else {
-                element.value = data[key] || '';
-            }
+        if (!element) return;
+
+        if (element.type === 'checkbox') {
+            element.checked = !!data[key];
+            return;
         }
+        // Use nullish coalescing so 0, false and '' all round-trip correctly
+        // (the previous `data[key] || ''` turned display_order=0 into blank).
+        const v = data[key];
+        element.value = v === null || v === undefined ? '' : v;
     });
 }

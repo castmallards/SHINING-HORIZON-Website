@@ -4,8 +4,17 @@ import enum
 from ..database import Base
 
 class UserRole(str, enum.Enum):
+    """Admin role hierarchy. Permission gates live in services.permissions.
+
+    * SUPER_ADMIN — everything, including managing other admin users + audit log.
+    * ADMIN       — full content CRUD + publish + delete + audit log; cannot manage users.
+    * MANAGER     — create / edit / publish / unpublish; cannot delete or manage users.
+    * DATA_ENTRY  — create + edit draft content; cannot publish or delete.
+    """
     SUPER_ADMIN = "super_admin"
     ADMIN = "admin"
+    MANAGER = "manager"
+    DATA_ENTRY = "data_entry"
 
 class User(Base):
     __tablename__ = "users"

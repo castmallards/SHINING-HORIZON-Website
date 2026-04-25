@@ -1,0 +1,88 @@
+{% extends "_base.html" %}
+{% from "_macros.html" import breadcrumb %}
+
+{% block page_title %}{{ meta_title or 'Our Brands - Shining Horizon Trading' }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .brand-card { transition: all 0.3s ease; }
+    .brand-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(45, 139, 201, 0.15); }
+    .brand-logo-img { transition: all 0.2s ease; }
+    .brand-logo-img:hover { transform: scale(1.05); }
+</style>
+{% endblock %}
+
+{% block content %}
+{{ breadcrumb([
+    {'name': 'Home', 'url': '/'},
+    {'name': 'Our Brands'}
+]) }}
+
+<section class="bg-gradient-to-r from-primary to-primary-dark text-white py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h1 class="text-4xl md:text-5xl font-bold mb-4" data-aos="fade-up">Our Trusted Brands</h1>
+        <p class="text-white/90 text-lg mb-6 max-w-3xl mx-auto" data-aos="fade-up" data-aos-delay="200">
+            We partner with world-leading manufacturers to bring you the highest quality industrial equipment and solutions
+        </p>
+        <div class="flex flex-wrap justify-center gap-3" data-aos="fade-up" data-aos-delay="400">
+            <span class="bg-white/10 px-4 py-2 rounded-lg text-sm font-medium">{{ brands|length }}+ Premium Brands</span>
+            <span class="bg-white/10 px-4 py-2 rounded-lg text-sm font-medium">Authorized Dealers</span>
+            <span class="bg-white/10 px-4 py-2 rounded-lg text-sm font-medium">Genuine Products</span>
+        </div>
+    </div>
+</section>
+
+<section class="py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="mb-16">
+            <h2 class="text-3xl font-bold text-gray-900 mb-2 text-center">Our Partner Brands</h2>
+            <p class="text-gray-600 text-center mb-8">Trusted manufacturers delivering quality industrial solutions</p>
+
+            {% if brands %}
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {% for brand in brands %}
+                <a href="/brand/{{ brand.slug }}" class="brand-card bg-white rounded-xl shadow-md p-6 text-center block" data-aos="fade-up" data-aos-delay="{{ (loop.index0 % 4) * 50 }}">
+                    <div class="brand-logo-img mb-4">
+                        {% if brand.logo %}
+                            <div class="w-full h-16 flex items-center justify-center">
+                                <img src="{{ brand.logo | variant('card') }}" alt="{{ brand.name }} logo" loading="lazy" class="max-h-16 max-w-full object-contain">
+                            </div>
+                        {% else %}
+                            <div class="w-16 h-16 mx-auto bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center rounded-lg" aria-hidden="true">
+                                <span class="text-primary text-2xl font-bold">{{ brand.name[0] }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <h3 class="font-semibold text-gray-900 mb-2">{{ brand.name }}</h3>
+                    {% if brand.description %}
+                        <p class="text-sm text-gray-600 mb-3 line-clamp-2">{{ brand.description }}</p>
+                    {% else %}
+                        <p class="text-sm text-gray-600 mb-3">Quality Industrial Products</p>
+                    {% endif %}
+                    <span class="inline-block w-full bg-primary text-white py-2 rounded-lg text-sm hover:bg-primary-dark transition">View Products</span>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-12">
+                <p class="text-gray-500 text-lg">No brands available yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="bg-gradient-to-r from-primary to-primary-dark py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 class="text-3xl font-bold text-white mb-4">Can't Find Your Preferred Brand?</h2>
+        <p class="text-white/90 mb-8 max-w-2xl mx-auto">
+            We work with many more manufacturers and can source products from various brands. Contact us for your specific requirements.
+        </p>
+        <div class="flex flex-wrap justify-center gap-4">
+            <a href="/products" class="bg-white text-primary font-semibold py-3 px-8 rounded-lg hover:bg-gray-100 transition">View All Products</a>
+            <a href="/quote" class="border-2 border-white text-white font-semibold py-3 px-8 rounded-lg hover:bg-white hover:text-primary transition">Request Quote</a>
+            <a href="https://wa.me/966536598520" target="_blank" rel="noopener" class="border-2 border-white text-white font-semibold py-3 px-8 rounded-lg hover:bg-white hover:text-primary transition">WhatsApp Us</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

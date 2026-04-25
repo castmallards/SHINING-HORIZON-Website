@@ -1,0 +1,177 @@
+{# _base.html — every public page extends this. #}
+{# Note: <head> contents are inlined here (not {% include %}'d) so that child #}
+{# templates' {% block extra_head %} / {% block jsonld %} overrides reach the #}
+{# rendered HTML — Jinja2 includes don't participate in block inheritance. #}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block page_title %}{{ meta_title or page_title or 'Shining Horizon Trading Co.' }}{% endblock %}</title>
+
+    {# SEO meta — populated via the seo service in routers/public.py #}
+    {% if meta_description %}<meta name="description" content="{{ meta_description }}">{% endif %}
+    {% if canonical_url %}<link rel="canonical" href="{{ canonical_url }}">{% endif %}
+
+    {# Open Graph — prefer the page's meta_title so per-page titles flow into share previews #}
+    {% set _share_title = og_title or meta_title or page_title or 'Shining Horizon Trading Co.' %}
+    <meta property="og:site_name" content="Shining Horizon Trading Co.">
+    <meta property="og:title" content="{{ _share_title }}">
+    {% if meta_description %}<meta property="og:description" content="{{ meta_description }}">{% endif %}
+    {% if og_image %}<meta property="og:image" content="{{ og_image }}">{% endif %}
+    <meta property="og:type" content="{{ og_type or 'website' }}">
+    {% if canonical_url %}<meta property="og:url" content="{{ canonical_url }}">{% endif %}
+
+    {# Twitter Card #}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ _share_title }}">
+    {% if meta_description %}<meta name="twitter:description" content="{{ meta_description }}">{% endif %}
+    {% if og_image %}<meta name="twitter:image" content="{{ og_image }}">{% endif %}
+
+    {# Robots — admin can override on draft pages via meta_robots #}
+    <meta name="robots" content="{{ meta_robots or 'index, follow' }}">
+    <meta name="theme-color" content="#2d8bc9">
+
+    {# Favicon — reuse the existing logo until a dedicated favicon is supplied. #}
+    <link rel="icon" href="/static/logo/Shinning_Horizon_logo.png" type="image/png">
+
+    {# Tailwind + fonts + AOS #}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#2d8bc9',
+                        'primary-dark': '#1a5a8a',
+                        'primary-light': '#5bb5e0',
+                        'accent': '#5bb5e0',
+                        'accent-light': '#8ed0f0',
+                    },
+                    fontFamily: { 'inter': ['Inter', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+        html, body { overflow-x: hidden; max-width: 100vw; }
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #2d8bc9; border-radius: 4px; }
+        .max-w-7xl { max-width: min(80rem, 100vw); }
+        .grid { width: 100%; }
+        .btn-primary { transition: all 0.3s ease; position: relative; overflow: hidden; }
+        .btn-primary::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); transition: left 0.5s ease; }
+        .btn-primary:hover::before { left: 100%; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0, 136, 204, 0.4); }
+        .product-card { transition: all 0.3s ease; }
+        .product-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(45, 139, 201, 0.15); }
+        .category-card { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .category-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0, 136, 204, 0.15); }
+        .brand-logo { transition: all 0.2s ease; }
+        .brand-logo:hover { transform: scale(1.1); opacity: 1 !important; }
+        .service-card { transition: all 0.3s ease; }
+        .service-card:hover { border-color: #0088cc; }
+        .service-card:hover .service-icon { background: #0077cc; color: white; }
+        .brand-slide { transition: all 0.3s ease; }
+        .brand-slide:hover { transform: translateY(-5px); border-color: #0088cc; box-shadow: 0 10px 25px rgba(0, 136, 204, 0.15); }
+
+        /* ── Product card multi-image carousel ─────────────────────── */
+        .card-carousel { position: relative; }
+        .card-arrow {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 30px; height: 30px; border-radius: 9999px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.92); color: #1a5a8a;
+            box-shadow: 0 4px 12px rgba(15,23,42,0.15);
+            border: 1px solid rgba(15,23,42,0.06);
+            opacity: 0; transition: opacity .2s ease, background .15s ease, transform .15s ease;
+            z-index: 3; cursor: pointer;
+        }
+        .card-carousel:hover .card-arrow,
+        .card-arrow:focus-visible { opacity: 1; }
+        .card-arrow:hover { background: #2d8bc9; color: white; }
+        .card-arrow:active { transform: translateY(-50%) scale(0.92); }
+        .card-arrow.prev { left: 8px; }
+        .card-arrow.next { right: 8px; }
+        @media (max-width: 640px) { .card-arrow { opacity: 1; width: 28px; height: 28px; } }
+
+        .card-dots {
+            position: absolute; left: 0; right: 0; bottom: 8px;
+            display: flex; justify-content: center; gap: 4px; z-index: 2; pointer-events: none;
+        }
+        .card-dot { width: 6px; height: 6px; border-radius: 9999px; background: rgba(15,23,42,0.25); transition: background .2s ease, transform .2s ease; }
+        .card-dot.active { background: #2d8bc9; transform: scale(1.3); }
+
+        .line-clamp-2 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+    </style>
+
+    {% block extra_head %}{% endblock %}
+
+    {% block jsonld %}
+    {% if jsonld_blocks %}
+        {% for block in jsonld_blocks %}{{ block | jsonld | safe }}{% endfor %}
+    {% endif %}
+    {% endblock %}
+</head>
+<body class="{% block body_class %}bg-gray-50 pt-16{% endblock %}">
+
+{% if is_preview %}
+<div style="position:fixed; top:0; left:0; right:0; z-index:60; background:#f59e0b; color:#1f2937; text-align:center; padding:6px 12px; font-size:13px; font-weight:600; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+    PREVIEW MODE — this draft is not visible to public visitors.
+    <a href="{{ request.url.path }}" style="text-decoration:underline; margin-left:6px;">Exit preview</a>
+</div>
+{% endif %}
+
+{% include "_header.html" %}
+
+{% block content %}{% endblock %}
+
+{% include "_footer.html" %}
+
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script>
+    AOS.init({ duration: 600, easing: 'ease-out', once: true });
+</script>
+
+<script>
+    // Product-card carousels: every .card-carousel with > 1 slide gets prev/next + dot sync.
+    // Click on an arrow stops the parent <a> link from firing.
+    (function () {
+        document.querySelectorAll('.card-carousel').forEach(function (box) {
+            const track = box.querySelector('.card-track');
+            const slides = box.querySelectorAll('.card-slide');
+            const dots = box.querySelectorAll('.card-dot');
+            const prev = box.querySelector('.card-arrow.prev');
+            const next = box.querySelector('.card-arrow.next');
+            if (!track || slides.length < 2) return;
+
+            let idx = 0;
+            function show(i) {
+                idx = ((i % slides.length) + slides.length) % slides.length;
+                track.style.transform = 'translateX(-' + (idx * 100) + '%)';
+                dots.forEach((d, k) => d.classList.toggle('active', k === idx));
+            }
+            function bind(btn, delta) {
+                if (!btn) return;
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault(); e.stopPropagation();
+                    show(idx + delta);
+                });
+            }
+            bind(prev, -1);
+            bind(next, +1);
+        });
+    })();
+</script>
+
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

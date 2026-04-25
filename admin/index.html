@@ -5,184 +5,93 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Shining Horizon Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="/static/logo/Shinning_Horizon_logo.png" type="image/png">
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
-    <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="admin-sidebar">
         <div class="sidebar-header">
-            <div class="sidebar-logo">
-                Shining <span>Horizon</span>
-            </div>
+            <a href="index.html"><img src="/static/logo/Shinning_Horizon_logo.png" alt="Shining Horizon" class="sidebar-logo-img"></a>
+            <button class="sidebar-close-btn" onclick="toggleSidebar()" aria-label="Collapse sidebar" title="Collapse sidebar">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
+            </button>
         </div>
-        
         <nav class="sidebar-nav">
             <a href="index.html" class="nav-item active" data-page="dashboard">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-                </svg>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                 Dashboard
             </a>
-            
             <div class="nav-section">Catalog</div>
-            
-            <a href="categories.html" class="nav-item" data-page="categories">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                </svg>
-                Categories
-            </a>
-            
-            <a href="subcategories.html" class="nav-item" data-page="subcategories">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
-                </svg>
-                Subcategories
-            </a>
-            
-            <a href="products.html" class="nav-item" data-page="products">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                </svg>
-                Products
-            </a>
-            
-            <a href="brands.html" class="nav-item" data-page="brands">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                </svg>
-                Brands
-            </a>
-            <a href="import.html" class="nav-item" data-page="import">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-                </svg>
-                Import Data
-            </a>
+            <a href="categories.html" class="nav-item"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>Categories</a>
+            <a href="subcategories.html" class="nav-item"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>Subcategories</a>
+            <a href="products.html" class="nav-item"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>Products</a>
+            <a href="brands.html" class="nav-item"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>Brands</a>
+            <a href="import.html" class="nav-item" data-permission="delete"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>Import Data</a>
             <div class="nav-section">System</div>
-            
-            <a href="users.html" class="nav-item" data-page="users">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-                </svg>
-                Users
-            </a>
-            
-            <a href="#" class="nav-item" onclick="generatePages()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                </svg>
-                Generate Pages
-            </a>
-            
-            <a href="#" class="nav-item" onclick="authAPI.logout()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                </svg>
-                Logout
-            </a>
+            <a href="users.html" class="nav-item" data-permission="users"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>Users</a>
+            <a href="audit.html" class="nav-item" data-permission="audit"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>Audit Log</a>
+            <a href="#" class="nav-item" onclick="event.preventDefault(); authAPI.logout()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>Logout</a>
         </nav>
     </aside>
-    
-    <!-- Main Content -->
+
     <main class="main-content">
-        <!-- Header -->
         <header class="header">
-            <div class="header-left">
-                <h1 class="header-title">Dashboard</h1>
+            <div class="header-left">                <h1 class="header-title">Dashboard</h1>
             </div>
             <div class="header-right">
                 <div class="user-menu">
                     <div class="user-avatar">A</div>
-                    <div class="user-info">
-                        <div class="user-name">Admin</div>
-                        <div class="user-role">Super Admin</div>
-                    </div>
+                    <div class="user-info"><div class="user-name">Admin</div><div class="user-role">Super Admin</div></div>
                 </div>
             </div>
         </header>
-        
-        <!-- Page Content -->
+
         <div class="page-content">
-            <!-- Stats -->
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-card-header">
-                        <div class="stat-icon blue">
-                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                            </svg>
-                        </div>
-                    </div>
+                    <div class="stat-card-header"><div class="stat-icon blue"><svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg></div></div>
                     <div class="stat-value" id="stat-categories">0</div>
                     <div class="stat-label">Categories</div>
                 </div>
-                
                 <div class="stat-card">
-                    <div class="stat-card-header">
-                        <div class="stat-icon green">
-                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                            </svg>
-                        </div>
-                    </div>
+                    <div class="stat-card-header"><div class="stat-icon green"><svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div></div>
                     <div class="stat-value" id="stat-products">0</div>
                     <div class="stat-label">Products</div>
                 </div>
-                
                 <div class="stat-card">
-                    <div class="stat-card-header">
-                        <div class="stat-icon purple">
-                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                            </svg>
-                        </div>
-                    </div>
+                    <div class="stat-card-header"><div class="stat-icon purple"><svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg></div></div>
                     <div class="stat-value" id="stat-brands">0</div>
                     <div class="stat-label">Brands</div>
                 </div>
-                
                 <div class="stat-card">
-                    <div class="stat-card-header">
-                        <div class="stat-icon orange">
-                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/>
-                            </svg>
-                        </div>
-                    </div>
+                    <div class="stat-card-header"><div class="stat-icon orange"><svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/></svg></div></div>
                     <div class="stat-value" id="stat-subcategories">0</div>
                     <div class="stat-label">Subcategories</div>
                 </div>
             </div>
-            
-            <!-- Quick Actions -->
+
             <div class="card" style="margin-bottom: 24px;">
                 <div class="card-header">
                     <h3 class="card-title">Quick Actions</h3>
                 </div>
                 <div class="card-body" style="display: flex; gap: 12px; flex-wrap: wrap;">
-                    <a href="products.html" class="btn btn-primary">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                        </svg>
-                        Add Product
-                    </a>
-                    <a href="categories.html" class="btn btn-secondary">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                        </svg>
-                        Add Category
-                    </a>
-                    <button class="btn btn-secondary" onclick="generatePages()">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                        </svg>
-                        Generate All Pages
-                    </button>
+                    <a href="products.html" class="btn btn-primary"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>Add Product</a>
+                    <a href="categories.html" class="btn btn-secondary"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>Add Category</a>
+                    <a href="brands.html" class="btn btn-secondary">Add Brand</a>
                 </div>
             </div>
-            
-            <!-- Recent Items -->
+
+            <!-- Validate Catalog (Phase 4.16) -->
+            <div class="card" style="margin-bottom: 24px;">
+                <div class="card-header">
+                    <h3 class="card-title">Validate Catalog</h3>
+                    <button class="btn btn-sm btn-secondary" onclick="loadValidation()">Refresh</button>
+                </div>
+                <div class="card-body" id="validation-body">
+                    <div class="loading"><div class="spinner"></div></div>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Recent Categories</h3>
@@ -192,19 +101,10 @@
                     <div class="table-container">
                         <table>
                             <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Type</th>
-                                    <th>Products</th>
-                                    <th>Status</th>
-                                </tr>
+                                <tr><th>Name</th><th>Type</th><th>Products</th><th>Status</th></tr>
                             </thead>
                             <tbody id="recent-categories">
-                                <tr>
-                                    <td colspan="4" class="loading">
-                                        <div class="spinner"></div>
-                                    </td>
-                                </tr>
+                                <tr><td colspan="4" class="loading"><div class="spinner"></div></td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -212,39 +112,44 @@
             </div>
         </div>
     </main>
-    
+
     <div id="toast-container" class="toast-container"></div>
-    
+
+    <script src="assets/js/auth.js"></script>
     <script src="assets/js/api.js"></script>
     <script src="assets/js/utils.js"></script>
     <script>
-        // Check auth
-        if (!requireAuth()) {
-            // Will redirect to login
-        }
-        
-        // Initialize
+        if (!requireAuth()) { /* redirected */ }
+
         document.addEventListener('DOMContentLoaded', async () => {
             initUserInfo();
+            // applyRoleGates() reads data-permission="audit" / "users" / "delete" attributes
+            // on nav links and hides them for roles that lack the permission. The legacy
+            // getElementById('nav-audit') call was removed when those id-based hooks were
+            // replaced with declarative data-permission attributes.
+            applyRoleGates();
             await loadDashboardData();
+            await loadValidation();
         });
-        
+
         async function loadDashboardData() {
             try {
-                // Load stats
-                const [categories, products, brands, subcategories] = await Promise.all([
+                const [categories, productsResponse, brands, subcategories] = await Promise.all([
                     categoriesAPI.getAll(),
-                    productsAPI.getAll(),
+                    productsAPI.getAll({ limit: 1 }),
                     brandsAPI.getAll(),
-                    subcategoriesAPI.getAll()
+                    subcategoriesAPI.getAll(),
                 ]);
-                
+
+                const productCount = productsResponse && typeof productsResponse.total === 'number'
+                    ? productsResponse.total
+                    : (Array.isArray(productsResponse) ? productsResponse.length : 0);
+
                 document.getElementById('stat-categories').textContent = categories.length;
-                document.getElementById('stat-products').textContent = products.length;
+                document.getElementById('stat-products').textContent = productCount.toLocaleString();
                 document.getElementById('stat-brands').textContent = brands.length;
                 document.getElementById('stat-subcategories').textContent = subcategories.length;
-                
-                // Load recent categories
+
                 const tbody = document.getElementById('recent-categories');
                 if (categories.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #64748b;">No categories yet</td></tr>';
@@ -254,24 +159,43 @@
                             <td><strong>${escapeHtml(cat.name)}</strong></td>
                             <td><span class="badge ${cat.type === 'detailed' ? 'badge-info' : 'badge-warning'}">${cat.type}</span></td>
                             <td>${cat.product_count || 0}</td>
-                            <td><span class="badge ${cat.is_active ? 'badge-success' : 'badge-danger'}">${cat.is_active ? 'Active' : 'Inactive'}</span></td>
+                            <td>${renderStatusPill(cat.status, cat.is_active)}</td>
                         </tr>
                     `).join('');
                 }
             } catch (error) {
-                showToast('Failed to load dashboard data', 'error');
+                showToast('Failed to load dashboard data: ' + error.message, 'error');
             }
         }
-        
-        async function generatePages() {
-            if (!confirm('This will regenerate all static HTML pages. Continue?')) return;
-            
+
+        async function loadValidation() {
+            const el = document.getElementById('validation-body');
+            el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
             try {
-                showToast('Generating pages...', 'success');
-                const result = await generatorAPI.generateAll();
-                showToast(`Generated ${result.categories.length} category pages`, 'success');
-            } catch (error) {
-                showToast('Failed to generate pages: ' + error.message, 'error');
+                const v = await productsAPI.validation();
+                const cards = [
+                    ['Published products', v.published_total, ''],
+                    ['Missing image', v.missing_image, v.missing_image ? 'warn' : ''],
+                    ['Missing meta', v.missing_meta, v.missing_meta ? 'warn' : ''],
+                    ['Missing specs', v.missing_specs, v.missing_specs ? 'warn' : ''],
+                    ['Missing description', v.missing_description, v.missing_description ? 'warn' : ''],
+                    ['Missing brand', v.missing_brand, v.missing_brand ? 'warn' : ''],
+                ];
+                let html = '<div class="validation-grid">';
+                cards.forEach(([label, num, klass]) => {
+                    html += `<div class="validation-card ${klass}"><div class="num">${(num || 0).toLocaleString()}</div><div class="label">${label}</div></div>`;
+                });
+                html += '</div>';
+                if (v.samples_missing_image && v.samples_missing_image.length) {
+                    html += '<div class="form-section"><h4>First 10 published products missing an image</h4><ul style="margin:0; padding-left: 18px;">';
+                    v.samples_missing_image.forEach(p => {
+                        html += `<li><a href="products.html?focus=${p.id}">${escapeHtml(p.name)}</a> ${p.part_number ? `<small style="color:#64748b">(${escapeHtml(p.part_number)})</small>` : ''}</li>`;
+                    });
+                    html += '</ul></div>';
+                }
+                el.innerHTML = html;
+            } catch (e) {
+                el.innerHTML = `<p style="color:#b91c1c">${escapeHtml(e.message)}</p>`;
             }
         }
     </script>

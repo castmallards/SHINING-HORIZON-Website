@@ -1,0 +1,311 @@
+{% extends "_base.html" %}
+{% from "_macros.html" import breadcrumb, picture_set, product_card %}
+
+{% block page_title %}{{ meta_title or (product.name ~ (' — ' ~ brand.name if brand else '') ~ ' — Shining Horizon Trading') }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .gallery-thumb { transition: all 0.2s ease; opacity: 0.6; cursor: pointer; }
+    .gallery-thumb:hover, .gallery-thumb.is-active { opacity: 1; border-color: #2d8bc9; }
+    /* Strip dark-theme inline styles that Quill editor injects */
+    .product-description * { background-color: transparent !important; color: inherit !important; }
+    .product-description p { margin-bottom: 0.875rem; }
+    .product-description p:last-child { margin-bottom: 0; }
+    .product-description ul, .product-description ol { padding-left: 1.5rem; margin-bottom: 0.875rem; }
+    .product-description li { margin-bottom: 0.3rem; }
+    .product-description strong { font-weight: 600; color: #1e293b; }
+    .product-description h1,.product-description h2,.product-description h3 { font-weight: 700; color: #1e293b; margin: 1rem 0 0.5rem; }
+    .spec-row:nth-child(odd) { background-color: #f9fafb; }
+
+    /* Carousel arrows on the hero image. Hidden on touch devices to avoid covering the image. */
+    .gallery-arrow {
+        position: absolute; top: 50%; transform: translateY(-50%);
+        width: 44px; height: 44px; border-radius: 9999px;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(255,255,255,0.92); color: #1a5a8a;
+        box-shadow: 0 6px 18px rgba(15,23,42,0.15);
+        border: 1px solid rgba(15,23,42,0.06);
+        opacity: 0; transition: opacity .2s ease, background .15s ease, transform .15s ease;
+        cursor: pointer; z-index: 5;
+    }
+    .gallery-hero:hover .gallery-arrow,
+    .gallery-arrow:focus-visible { opacity: 1; }
+    .gallery-arrow:hover { background: #2d8bc9; color: white; }
+    .gallery-arrow:active { transform: translateY(-50%) scale(0.95); }
+    .gallery-arrow.prev { left: 12px; }
+    .gallery-arrow.next { right: 12px; }
+    @media (max-width: 640px) { .gallery-arrow { opacity: 1; width: 38px; height: 38px; } }
+
+    .gallery-counter {
+        position: absolute; right: 14px; bottom: 14px; z-index: 5;
+        background: rgba(15,23,42,0.7); color: white;
+        font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 9999px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{{ breadcrumb([
+    {'name': 'Home', 'url': '/'},
+    {'name': category.name, 'url': '/category/' ~ category.slug} if category else None,
+    {'name': subcategory.name, 'url': '/category/' ~ category.slug ~ '/' ~ subcategory.slug} if subcategory else None,
+    {'name': product.name}
+] | reject('none') | list) }}
+
+<section class="bg-white py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid lg:grid-cols-2 gap-12">
+            <div>
+                <div class="gallery-hero relative bg-gray-50 rounded-2xl p-8 flex items-center justify-center mb-4 min-h-[400px]">
+                    {% if product.image %}
+                        {# Above-the-fold hero — eager loaded so LCP is fast. #}
+                        <picture>
+                            <source type="image/webp"
+                                    srcset="{{ product.image | variant('card') }} 600w, {{ product.image | variant('hero') }} 1600w"
+                                    sizes="(max-width: 1024px) 90vw, 600px">
+                            <img id="product-hero-image" src="{{ product.image | variant('hero') }}" alt="{{ product.name }}"
+                                 fetchpriority="high" decoding="async"
+                                 class="max-h-[400px] max-w-full object-contain">
+                        </picture>
+                    {% else %}
+                        <div class="text-primary text-7xl font-bold" aria-hidden="true">{{ product.name[0] }}</div>
+                    {% endif %}
+
+                    {# Prev/next arrows — only meaningful when there's more than one image. #}
+                    {% if gallery_items and gallery_items|length > 1 %}
+                        <button type="button" id="gallery-prev" class="gallery-arrow prev" aria-label="Previous image">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                        </button>
+                        <button type="button" id="gallery-next" class="gallery-arrow next" aria-label="Next image">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                        </button>
+                        <span id="gallery-counter" class="gallery-counter" aria-live="polite">1 / {{ gallery_items|length }}</span>
+                    {% endif %}
+                </div>
+
+                {% if gallery_items and gallery_items|length > 1 %}
+                <div class="grid grid-cols-5 gap-3" role="list" aria-label="Product gallery">
+                    {% for src in gallery_items %}
+                    <button type="button"
+                            class="gallery-thumb {% if loop.first %}is-active{% endif %} bg-gray-50 rounded-lg p-2 border-2 border-transparent flex items-center justify-center h-20"
+                            data-full="{{ src | variant('hero') }}"
+                            data-index="{{ loop.index0 }}"
+                            aria-label="Show product image {{ loop.index }}">
+                        <img src="{{ src | variant('thumb') }}" alt="{{ product.name }} view {{ loop.index }}" loading="lazy" class="max-h-full max-w-full object-contain"
+                             onerror="this.closest('.gallery-thumb').style.display='none'">
+                    </button>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <div>
+                <div class="flex items-center justify-between gap-4 mb-4">
+                    {# Brand: logo ONLY (name is in the alt text + hover tooltip). #}
+                    {% if brand %}
+                        <a href="/brand/{{ brand.slug }}" title="{{ brand.name }}"
+                           class="inline-flex items-center bg-gray-50 border border-gray-200 hover:border-primary hover:shadow-md rounded-xl px-4 py-2 transition group">
+                            {% if brand.logo %}
+                                <img src="{{ brand.logo | variant('thumb') }}" alt="{{ brand.name }}" loading="lazy" class="h-8 max-w-[120px] object-contain">
+                            {% else %}
+                                <span class="text-sm font-semibold text-primary uppercase tracking-wider">{{ brand.name }}</span>
+                            {% endif %}
+                        </a>
+                    {% else %}
+                        <span></span>
+                    {% endif %}
+
+                    {# Direct WhatsApp icon — quick way to ping sales about THIS product. #}
+                    <a href="https://wa.me/966536598520?text={{ ('Hi, I am interested in: ' ~ product.name ~ (' (Part ' ~ product.part_number ~ ')' if product.part_number else '')) | urlencode }}"
+                       target="_blank" rel="noopener" title="Ask about this on WhatsApp"
+                       class="inline-flex items-center justify-center w-11 h-11 rounded-full bg-green-500 text-white hover:bg-green-600 active:scale-95 transition shadow-md">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                        <span class="sr-only">WhatsApp</span>
+                    </a>
+                </div>
+
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">{{ product.name }}</h1>
+
+                {% if product.part_number %}
+                    <p class="text-sm text-gray-600 mb-4">
+                        <span class="font-semibold text-gray-900">Part Number:</span>
+                        <span class="bg-gray-100 px-2 py-1 rounded font-mono">{{ product.part_number }}</span>
+                    </p>
+                {% endif %}
+
+                {% if product.short_description %}
+                    <p class="text-gray-700 text-lg mb-6">{{ product.short_description }}</p>
+                {% endif %}
+
+                <div class="flex flex-wrap items-center gap-3 mb-8">
+                    <a href="/quote?product={{ (product.part_number or product.name) | urlencode }}{% if brand %}&brand={{ brand.name | urlencode }}{% endif %}{% if category %}&category={{ category.name | urlencode }}{% endif %}"
+                       class="inline-flex items-center gap-2 bg-primary text-white font-semibold py-3 px-6 rounded-lg hover:bg-primary-dark transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        Request Quote
+                    </a>
+                    {% if product.datasheet_url %}
+                        <a href="{{ product.datasheet_url }}" target="_blank" rel="noopener"
+                           class="inline-flex items-center gap-2 border-2 border-primary text-primary font-semibold py-3 px-6 rounded-lg hover:bg-primary hover:text-white transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Download Datasheet
+                        </a>
+                    {% endif %}
+                </div>
+
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                    {% if category %}
+                        <div><dt class="text-gray-500">Category</dt><dd class="font-medium text-gray-900"><a href="/category/{{ category.slug }}" class="hover:text-primary">{{ category.name }}</a></dd></div>
+                    {% endif %}
+                    {% if subcategory %}
+                        <div><dt class="text-gray-500">Subcategory</dt><dd class="font-medium text-gray-900"><a href="/category/{{ category.slug }}/{{ subcategory.slug }}" class="hover:text-primary">{{ subcategory.name }}</a></dd></div>
+                    {% endif %}
+                    {% if brand %}
+                        <div><dt class="text-gray-500">Brand</dt><dd class="font-medium text-gray-900"><a href="/brand/{{ brand.slug }}" class="hover:text-primary">{{ brand.name }}</a></dd></div>
+                    {% endif %}
+                    {% if brand and brand.country %}
+                        <div><dt class="text-gray-500">Country of origin</dt><dd class="font-medium text-gray-900">{{ brand.country }}</dd></div>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% if product.description %}
+<section class="py-12 bg-gray-50">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="flex items-center justify-center w-9 h-9 rounded-lg bg-primary/10 text-primary flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-900">Product Description</h2>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 p-6 product-description text-gray-700 leading-relaxed" style="font-size:1rem; line-height:1.75;">{{ product.description | safe }}</div>
+    </div>
+</section>
+{% endif %}
+
+{% if specifications %}
+<section class="py-12 bg-white">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="flex items-center justify-center w-9 h-9 rounded-lg bg-primary/10 text-primary flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-900">Technical Specifications</h2>
+        </div>
+        <div class="overflow-hidden rounded-xl border border-gray-200">
+            <table class="w-full text-sm">
+                <caption class="sr-only">Technical specifications for {{ product.name }}</caption>
+                <tbody>
+                    {% for spec in specifications %}
+                    <tr class="spec-row">
+                        <th scope="row" class="text-left font-semibold text-gray-700 px-5 py-3 w-1/3 align-top">{{ spec.key }}</th>
+                        <td class="text-gray-900 px-5 py-3">{{ spec.value }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% if related_products %}
+<section class="py-12 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-end justify-between mb-8">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900">Related products</h2>
+                <p class="text-gray-600 text-sm mt-1">Other items{% if subcategory %} in {{ subcategory.name }}{% endif %}.</p>
+            </div>
+            {% if subcategory %}
+                <a href="/category/{{ category.slug }}/{{ subcategory.slug }}" class="hidden sm:inline text-sm font-semibold text-primary hover:text-primary-dark">View all →</a>
+            {% endif %}
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            {% for related in related_products %}
+                {{ product_card(related, delay_ms=(loop.index0 % 4) * 25) }}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<section class="bg-gradient-to-r from-primary to-primary-dark py-12">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 class="text-2xl font-bold text-white mb-3">Need pricing on {{ product.name }}?</h2>
+        <p class="text-white/90 mb-6 max-w-xl mx-auto">Send us your specifications and we'll respond within 24 hours.</p>
+        <div class="flex flex-wrap justify-center gap-4">
+            <a href="/quote?product={{ (product.part_number or product.name) | urlencode }}{% if brand %}&brand={{ brand.name | urlencode }}{% endif %}" class="bg-white text-primary font-semibold py-3 px-6 rounded-lg hover:bg-gray-100 transition">Request Quote</a>
+            <a href="https://wa.me/966536598520" target="_blank" rel="noopener" class="border-2 border-white text-white font-semibold py-3 px-6 rounded-lg hover:bg-white hover:text-primary transition">WhatsApp Us</a>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    (function () {
+        const hero = document.getElementById('product-hero-image');
+        if (!hero) return;
+        const thumbs = Array.from(document.querySelectorAll('.gallery-thumb'));
+        const counter = document.getElementById('gallery-counter');
+        const prev = document.getElementById('gallery-prev');
+        const next = document.getElementById('gallery-next');
+        if (!thumbs.length) return;
+
+        let current = 0;
+        const total = thumbs.length;
+
+        // The hero lives inside a <picture>. Browsers prefer <source srcset> over
+        // <img src>, so we must clear the srcset on all sibling <source> elements
+        // before updating src — otherwise the browser ignores our src change.
+        const heroSources = hero.parentElement
+            ? Array.from(hero.parentElement.querySelectorAll('source'))
+            : [];
+
+        function show(idx) {
+            current = ((idx % total) + total) % total;
+            const btn = thumbs[current];
+            const full = btn.getAttribute('data-full');
+            if (full) {
+                heroSources.forEach(s => { s.srcset = ''; });
+                hero.src = full;
+            }
+            thumbs.forEach(b => b.classList.remove('is-active'));
+            btn.classList.add('is-active');
+            if (counter) counter.textContent = (current + 1) + ' / ' + total;
+        }
+
+        thumbs.forEach((btn, i) => btn.addEventListener('click', () => show(i)));
+        prev && prev.addEventListener('click', () => show(current - 1));
+        next && next.addEventListener('click', () => show(current + 1));
+
+        // Keyboard arrows when the gallery has focus or no input is focused.
+        document.addEventListener('keydown', (e) => {
+            const tag = (document.activeElement && document.activeElement.tagName) || '';
+            if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+            if (e.key === 'ArrowLeft') { show(current - 1); }
+            else if (e.key === 'ArrowRight') { show(current + 1); }
+        });
+
+        // Touch swipe on the hero image.
+        let touchX = null;
+        const heroBox = hero.closest('.gallery-hero');
+        if (heroBox) {
+            heroBox.addEventListener('touchstart', (e) => { touchX = e.changedTouches[0].clientX; }, { passive: true });
+            heroBox.addEventListener('touchend', (e) => {
+                if (touchX == null) return;
+                const dx = e.changedTouches[0].clientX - touchX;
+                if (Math.abs(dx) > 40) show(current + (dx < 0 ? 1 : -1));
+                touchX = null;
+            }, { passive: true });
+        }
+    })();
+</script>
+{% endblock %}

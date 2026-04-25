@@ -1,0 +1,133 @@
+{# _macros.html — small reusable bits used across public templates. #}
+
+{#
+  picture_set: emits a responsive <picture> element using the WebP variants
+  the image pipeline already generates (thumb 300, card 600, hero 1600).
+  Browsers automatically pick the smallest image that fits the rendered size,
+  so phones download ~30 KB instead of the 250 KB hero. Falls back to a
+  single <img> for legacy paths and SVGs.
+
+  Args:
+    src             — DB image base_path (or legacy path)
+    alt             — alt text (required for accessibility)
+    class_          — CSS classes for the inner <img>
+    sizes           — CSS `sizes` attribute (default: card-friendly)
+    default_variant — variant used by the bare <img> fallback ("card")
+    eager           — set true for above-the-fold images; otherwise lazy-loads
+#}
+{% macro picture_set(src, alt, class_='', sizes='(max-width: 640px) 300px, (max-width: 1024px) 600px, 1600px', default_variant='card', eager=false) %}
+    {% if not src %}
+    {% elif src.endswith('.svg') or '.' in src.rsplit('/', 1)[-1] %}
+        {# Legacy path or SVG — single <img>, no srcset (no variants exist). #}
+        <img src="{{ src | variant(default_variant) }}" alt="{{ alt }}"
+             {% if not eager %}loading="lazy" decoding="async"{% endif %}
+             class="{{ class_ }}">
+    {% else %}
+        <picture>
+            <source type="image/webp"
+                    srcset="{{ src | variant('thumb') }} 300w, {{ src | variant('card') }} 600w, {{ src | variant('hero') }} 1600w"
+                    sizes="{{ sizes }}">
+            <img src="{{ src | variant(default_variant) }}" alt="{{ alt }}"
+                 {% if not eager %}loading="lazy" decoding="async"{% endif %}
+                 class="{{ class_ }}">
+        </picture>
+    {% endif %}
+{% endmacro %}
+
+{# Breadcrumb. Pass a list of {name, url} dicts; the last entry is rendered as the current page (no link). #}
+{% macro breadcrumb(items) %}
+<div class="bg-white border-b">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <nav class="flex text-sm" aria-label="Breadcrumb">
+            {% for item in items %}
+                {% if loop.last %}
+                    <span class="text-primary font-medium">{{ item.name }}</span>
+                {% else %}
+                    <a href="{{ item.url }}" class="text-gray-500 hover:text-primary">{{ item.name }}</a>
+                    <span class="mx-2 text-gray-400">/</span>
+                {% endif %}
+            {% endfor %}
+        </nav>
+    </div>
+</div>
+{% endmacro %}
+
+{# Card carousel: builds the deduplicated [main + gallery] image list and emits #}
+{# arrow buttons + a counter only when there's more than one image to scroll. #}
+{% macro card_carousel(product) %}
+    {% set _imgs = [] %}
+    {% if product.image %}{% set _ = _imgs.append(product.image) %}{% endif %}
+    {# Guard: only iterate gallery when it is a list (dict from _card_dict).
+       If an ORM object slips through, product.gallery is a raw JSON string —
+       iterating a string gives individual characters, not image paths. #}
+    {% if product.gallery is iterable and product.gallery is not string %}
+        {% for src in product.gallery %}{% if src and src not in _imgs %}{% set _ = _imgs.append(src) %}{% endif %}{% endfor %}
+    {% endif %}
+    <div class="card-carousel relative h-44 sm:h-48 bg-gray-50 overflow-hidden" data-count="{{ _imgs|length }}">
+        {% if _imgs %}
+            <div class="card-track flex h-full transition-transform duration-300 ease-out">
+                {% for src in _imgs %}
+                    <div class="card-slide flex-shrink-0 w-full h-full flex items-center justify-center p-4">
+                        <img src="{{ src | variant('card') }}" alt="{{ product.name }}{% if not loop.first %} view {{ loop.index }}{% endif %}"
+                             loading="lazy" decoding="async"
+                             class="max-h-full max-w-full object-contain">
+                    </div>
+                {% endfor %}
+            </div>
+            {% if _imgs|length > 1 %}
+                <button type="button" class="card-arrow prev" aria-label="Previous image" tabindex="-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <button type="button" class="card-arrow next" aria-label="Next image" tabindex="-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                </button>
+                <div class="card-dots" aria-hidden="true">
+                    {% for _ in _imgs %}<span class="card-dot{% if loop.first %} active{% endif %}"></span>{% endfor %}
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="w-full h-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center" aria-hidden="true">
+                <span class="text-primary text-4xl font-bold">{{ product.name[0] }}</span>
+            </div>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+
+{# Product card used by category and product-listing pages. #}
+{% macro product_card(product, delay_ms=0) %}
+<article class="product-card bg-white rounded-xl shadow-md overflow-hidden" data-aos="fade-up" data-aos-delay="{{ delay_ms }}">
+    <a href="/product/{{ product.slug }}" class="block">
+        {{ card_carousel(product) }}
+    </a>
+    <div class="p-5">
+        {% if product.brand_name %}
+            <p class="text-xs text-primary font-semibold uppercase tracking-wider mb-1">{{ product.brand_name }}</p>
+        {% endif %}
+        <h3 class="text-base font-bold text-gray-900 mb-1 line-clamp-2">
+            <a href="/product/{{ product.slug }}" class="hover:text-primary transition">{{ product.name }}</a>
+        </h3>
+        {% if product.short_description %}
+            <p class="text-gray-500 text-sm mb-3 line-clamp-2">{{ product.short_description }}</p>
+        {% endif %}
+        <div class="flex gap-2">
+            <a href="/quote?product={{ (product.part_number or product.name) | urlencode }}" class="flex-1 bg-primary text-white text-center py-2.5 rounded-lg font-medium hover:bg-primary-dark transition text-sm">Request Quote</a>
+            <a href="/product/{{ product.slug }}" title="View full details"
+               class="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-gray-200 text-gray-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition flex-shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </a>
+        </div>
+    </div>
+</article>
+{% endmacro %}
+
+{# Brand logo strip cell. #}
+{% macro brand_logo_link(brand) %}
+<a href="/brand/{{ brand.slug }}" class="brand-logo" title="{{ brand.name }}">
+    {% if brand.logo %}
+        <img src="{{ brand.logo | variant('thumb') }}" alt="{{ brand.name }} logo" loading="lazy" class="h-10 grayscale hover:grayscale-0 transition opacity-60 hover:opacity-100">
+    {% else %}
+        <span class="text-gray-600 font-medium">{{ brand.name }}</span>
+    {% endif %}
+</a>
+{% endmacro %}

@@ -1,0 +1,342 @@
+{% extends "_base.html" %}
+{% from "_macros.html" import breadcrumb %}
+
+{% block page_title %}Request Quote - Shining Horizon Trading{% endblock %}
+
+{% block extra_head %}
+<style>
+    .form-step { display: none; }
+    .form-step.active { display: block; }
+    .step-indicator { transition: all 0.3s ease; }
+    .step-indicator.active { background-color: #2d8bc9; color: white; }
+    .step-indicator.completed { background-color: #10b981; color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+{{ breadcrumb([
+    {'name': 'Home', 'url': '/'},
+    {'name': 'Request Quote'}
+]) }}
+
+<section class="bg-gradient-to-r from-primary to-primary-dark text-white py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h1 class="text-4xl md:text-5xl font-bold mb-4" data-aos="fade-up">Request Quote</h1>
+        <p class="text-xl text-white/90 max-w-2xl mx-auto" data-aos="fade-up" data-aos-delay="200">
+            Get competitive pricing for your industrial equipment requirements
+        </p>
+    </div>
+</section>
+
+<section class="py-20">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-center mb-12">
+            <div class="flex items-center space-x-4">
+                <div class="step-indicator active w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-semibold text-sm" id="step-1-indicator">1</div>
+                <div class="w-16 h-1 bg-gray-200"></div>
+                <div class="step-indicator w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-semibold text-sm" id="step-2-indicator">2</div>
+            </div>
+        </div>
+
+        {% if prefill_product or prefill_brand or prefill_category %}
+        <div class="mb-6 bg-primary/5 border border-primary/20 text-primary rounded-lg p-4 flex items-start gap-3" data-aos="fade-up">
+            <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div class="text-sm">
+                <p class="font-semibold mb-1">Product details auto-filled!</p>
+                {% if prefill_product %}<span class="block">Product: {{ prefill_product }}</span>{% endif %}
+                {% if prefill_brand %}<span class="block">Brand: {{ prefill_brand }}</span>{% endif %}
+                {% if prefill_category %}<span class="block">Category: {{ prefill_category }}</span>{% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="bg-white rounded-2xl shadow-xl p-8">
+            <form id="quote-form" action="/quote" method="post">
+                <div class="form-step active" id="step-1">
+                    <div class="text-center mb-8">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">Product Information</h2>
+                        <p class="text-gray-600">Tell us about the products you need</p>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Inquiry Type *</label>
+                                <select id="inquiry-type" name="inquiry_type" required class="w-full p-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition">
+                                    <option value="">Select Inquiry Type</option>
+                                    <option value="Request for Quote">Request for Quote</option>
+                                    <option value="Need Further Details">Need Further Details</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Product Category *</label>
+                                <select id="category" name="category" required class="w-full p-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition">
+                                    <option value="">Select Category</option>
+                                    {% set category_options = [
+                                        'Industrial Automation',
+                                        'Electrical Products',
+                                        'Lifting Equipment',
+                                        'Pneumatic Products',
+                                        'Tools',
+                                        'Safety Products',
+                                        'HVAC & Spare Parts',
+                                        'Plumbing Products',
+                                        'Other'
+                                    ] %}
+                                    {% for opt in category_options %}
+                                        <option value="{{ opt }}" {% if prefill_category == opt %}selected{% endif %}>{{ opt }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Specific Product</label>
+                                <input type="text" id="product" name="product" value="{{ prefill_product or '' }}" placeholder="e.g., Chain Hoist, PLC Controller" class="w-full p-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Preferred Brand</label>
+                                <input type="text" id="brand" name="brand" value="{{ prefill_brand or '' }}" placeholder="e.g., Kito, Siemens, ABB" class="w-full p-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Quantity Required *</label>
+                            <input type="number" id="quantity" name="quantity" required min="1" placeholder="1" class="w-full p-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Technical Specifications</label>
+                            <textarea id="specifications" name="specifications" rows="4" placeholder="Please provide detailed specifications, capacity, dimensions, power requirements, etc." class="w-full p-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition resize-none"></textarea>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button type="button" onclick="nextStep()" class="bg-primary text-white font-semibold py-3 px-8 rounded-lg hover:bg-primary-dark transition">Next Step</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-step" id="step-2">
+                    <div class="text-center mb-8">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">Contact & Project Details</h2>
+                        <p class="text-gray-600">Your contact information and project requirements</p>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Contact Person *</label>
+                                <input type="text" id="contact-person" name="contact_person" required placeholder="Full Name" class="w-full p-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
+                                <input type="email" id="email" name="email" required placeholder="your.email@company.com" class="w-full p-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+                            <input type="tel" id="phone" name="phone" required placeholder="+966 XX XXX XXXX" class="w-full p-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Additional Requirements</label>
+                            <textarea id="additional-requirements" name="additional_requirements" rows="4" placeholder="Installation services, training, warranty requirements, certifications needed, etc." class="w-full p-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition resize-none"></textarea>
+                        </div>
+
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex items-start gap-3">
+                                <input type="checkbox" id="terms" name="terms" required class="mt-1">
+                                <label for="terms" class="text-sm text-gray-600">
+                                    I agree to the Terms &amp; Conditions and Privacy Policy. I consent to Shining Horizon Trading
+                                    contacting me regarding this quote request.
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between">
+                            <button type="button" onclick="prevStep()" class="border-2 border-gray-300 text-gray-700 font-semibold py-3 px-8 rounded-lg hover:border-primary hover:text-primary transition">Previous</button>
+                            <button type="submit" class="bg-primary text-white font-semibold py-3 px-8 rounded-lg hover:bg-primary-dark transition flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                </svg>
+                                Submit Quote Request
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<section class="py-16 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">Why Request Quote From Us?</h2>
+            <p class="text-gray-600">Experience the Shining Horizon advantage</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div class="text-center" data-aos="fade-up">
+                <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Quick Response</h3>
+                <p class="text-gray-600 text-sm">Get detailed quotes within 24 hours</p>
+            </div>
+
+            <div class="text-center" data-aos="fade-up" data-aos-delay="100">
+                <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Best Prices</h3>
+                <p class="text-gray-600 text-sm">Competitive pricing with no hidden costs</p>
+            </div>
+
+            <div class="text-center" data-aos="fade-up" data-aos-delay="200">
+                <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Quality Assured</h3>
+                <p class="text-gray-600 text-sm">Genuine products with full warranties</p>
+            </div>
+
+            <div class="text-center" data-aos="fade-up" data-aos-delay="300">
+                <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Expert Support</h3>
+                <p class="text-gray-600 text-sm">Technical guidance from industry experts</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-16 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-2xl shadow-lg p-8">
+            <div class="text-center mb-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Need Immediate Assistance?</h2>
+                <p class="text-gray-600">Our sales team is ready to help you</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-gray-900 mb-1">Call Us</h3>
+                    <p class="text-primary font-semibold">011-412-1615</p>
+                    <p class="text-gray-500 text-sm">Mon-Fri 8AM-6PM</p>
+                </div>
+
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-gray-900 mb-1">Email Us</h3>
+                    <p class="text-primary font-semibold">info@shininghorizon.com</p>
+                    <p class="text-gray-500 text-sm">Quick response guaranteed</p>
+                </div>
+
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-gray-900 mb-1">Visit Us</h3>
+                    <p class="text-primary font-semibold">Riyadh, Saudi Arabia</p>
+                    <p class="text-gray-500 text-sm">Al Amal District</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-16 bg-gradient-to-r from-primary to-primary-dark text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 class="text-3xl font-bold mb-4">Browse Our Products</h2>
+        <p class="text-white/90 mb-8 max-w-2xl mx-auto">
+            Explore our comprehensive catalog of industrial products while we prepare your custom quote.
+        </p>
+        <div class="flex flex-wrap justify-center gap-4">
+            <a href="/products" class="bg-white text-primary font-semibold py-3 px-8 rounded-lg hover:bg-gray-100 transition">View All Products</a>
+            <a href="/categories" class="border-2 border-white text-white font-semibold py-3 px-8 rounded-lg hover:bg-white hover:text-primary transition">Browse Categories</a>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let currentStep = 1;
+    const totalSteps = 2;
+
+    function nextStep() {
+        if (validateCurrentStep()) {
+            if (currentStep < totalSteps) {
+                document.getElementById(`step-${currentStep}`).classList.remove('active');
+                document.getElementById(`step-${currentStep}-indicator`).classList.remove('active');
+                document.getElementById(`step-${currentStep}-indicator`).classList.add('completed');
+                currentStep++;
+                document.getElementById(`step-${currentStep}`).classList.add('active');
+                document.getElementById(`step-${currentStep}-indicator`).classList.add('active');
+            }
+        }
+    }
+
+    function prevStep() {
+        if (currentStep > 1) {
+            document.getElementById(`step-${currentStep}`).classList.remove('active');
+            document.getElementById(`step-${currentStep}-indicator`).classList.remove('active');
+            currentStep--;
+            document.getElementById(`step-${currentStep}`).classList.add('active');
+            document.getElementById(`step-${currentStep}-indicator`).classList.add('active');
+            document.getElementById(`step-${currentStep}-indicator`).classList.remove('completed');
+        }
+    }
+
+    function validateCurrentStep() {
+        const currentStepElement = document.getElementById(`step-${currentStep}`);
+        const requiredFields = currentStepElement.querySelectorAll('[required]');
+        let isValid = true;
+        let firstInvalid = null;
+
+        requiredFields.forEach(field => {
+            if (!field.value.trim() && field.type !== 'checkbox') {
+                field.classList.add('border-red-500');
+                if (!firstInvalid) firstInvalid = field;
+                isValid = false;
+            } else if (field.type === 'checkbox' && !field.checked) {
+                if (!firstInvalid) firstInvalid = field;
+                isValid = false;
+            } else {
+                field.classList.remove('border-red-500');
+            }
+        });
+
+        if (!isValid && firstInvalid) {
+            firstInvalid.focus();
+        }
+        return isValid;
+    }
+</script>
+{% endblock %}

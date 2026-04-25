@@ -1,3 +1,5 @@
 {
-    "html.autoClosingTags": false
+    "html.autoClosingTags": false,
+    "claudeCode.useTerminal": true,
+    "claudeCode.initialPermissionMode": "acceptEdits"
 }

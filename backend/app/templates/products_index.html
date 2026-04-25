@@ -1,0 +1,117 @@
+{% extends "_base.html" %}
+{% from "_macros.html" import product_card %}
+
+{% block page_title %}{{ meta_title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .filter-chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 6px 14px; border-radius: 9999px;
+        font-size: 0.8rem; font-weight: 500; cursor: pointer;
+        border: 1.5px solid #e2e8f0; background: white; color: #475569;
+        transition: all .15s ease; white-space: nowrap;
+    }
+    .filter-chip:hover { border-color: #2d8bc9; color: #2d8bc9; }
+    .filter-chip.active { background: #2d8bc9; border-color: #2d8bc9; color: white; }
+    .filter-chip .chip-count {
+        font-size: 0.7rem; background: rgba(0,0,0,0.12);
+        padding: 1px 6px; border-radius: 9999px;
+    }
+    .filter-chip.active .chip-count { background: rgba(255,255,255,0.25); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Hero bar ─────────────────────────────────────────────────────── #}
+<section class="bg-gradient-to-r from-primary-dark to-primary py-14">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h1 class="text-3xl sm:text-4xl font-bold text-white mb-3">Our Product Catalog</h1>
+        <p class="text-white/80 max-w-xl mx-auto text-base">
+            {% if total %}{{ total }} product{{ 's' if total != 1 }} available{% if search_q %} for "<strong class="text-white">{{ search_q }}</strong>"{% endif %}{% else %}No products match your filters{% endif %}
+        </p>
+    </div>
+</section>
+
+{# ── Filter bar ────────────────────────────────────────────────────── #}
+<section class="bg-white border-b border-gray-100 sticky top-[64px] z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        <form method="get" action="/products" id="filter-form" class="flex flex-wrap gap-3 items-center">
+
+            {# Search #}
+            <div class="relative flex-shrink-0">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <input type="search" name="q" value="{{ search_q }}" placeholder="Search products…"
+                       class="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 w-52"
+                       onchange="this.form.submit()">
+            </div>
+
+            {# Category chips #}
+            <div class="flex gap-2 flex-wrap items-center">
+                <a href="/products{% if search_q %}?q={{ search_q | urlencode }}{% endif %}{% if active_brand %}&brand={{ active_brand }}{% endif %}"
+                   class="filter-chip {% if not active_category %}active{% endif %}">All</a>
+                {% for cat in categories %}
+                <a href="/products?category={{ cat.slug }}{% if search_q %}&q={{ search_q | urlencode }}{% endif %}{% if active_brand %}&brand={{ active_brand }}{% endif %}"
+                   class="filter-chip {% if active_category == cat.slug %}active{% endif %}">
+                    {{ cat.name }}
+                </a>
+                {% endfor %}
+            </div>
+
+            {# Brand dropdown #}
+            {% if brands %}
+            <div class="ml-auto flex-shrink-0">
+                <select name="brand" onchange="this.form.submit()"
+                        class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 bg-white text-gray-600">
+                    <option value="">All Brands</option>
+                    {% for b in brands %}
+                    <option value="{{ b.slug }}" {% if active_brand == b.slug %}selected{% endif %}>{{ b.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
+            {# hidden fields to preserve other filters on submit #}
+            {% if active_category %}<input type="hidden" name="category" value="{{ active_category }}">{% endif %}
+        </form>
+    </div>
+</section>
+
+{# ── Product grid ─────────────────────────────────────────────────── #}
+<section class="py-12 bg-gray-50 min-h-[50vh]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        {% if products %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            {% for product in products %}
+                {{ product_card(product, delay_ms=(loop.index0 % 4) * 30) }}
+            {% endfor %}
+        </div>
+
+        {% else %}
+        <div class="text-center py-20">
+            <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+            <h3 class="text-xl font-semibold text-gray-500 mb-2">No products found</h3>
+            <p class="text-gray-400 mb-6">Try a different search term or remove some filters.</p>
+            <a href="/products" class="inline-flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-lg font-medium hover:bg-primary-dark transition">
+                Clear filters
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+{# ── CTA ──────────────────────────────────────────────────────────── #}
+<section class="bg-white border-t border-gray-100 py-12">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">Can't find what you need?</h2>
+        <p class="text-gray-500 mb-6">Tell us your requirements and we'll source it for you.</p>
+        <div class="flex flex-wrap justify-center gap-3">
+            <a href="/quote" class="bg-primary text-white font-semibold py-3 px-6 rounded-lg hover:bg-primary-dark transition">Request a Quote</a>
+            <a href="https://wa.me/966536598520" target="_blank" rel="noopener" class="border-2 border-primary text-primary font-semibold py-3 px-6 rounded-lg hover:bg-primary hover:text-white transition">WhatsApp Us</a>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

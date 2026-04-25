@@ -5,28 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Products - Shining Horizon Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="/static/logo/Shinning_Horizon_logo.png" type="image/png">
     <link rel="stylesheet" href="assets/css/style.css">
+    <!-- Quill rich-text editor (Phase 4.5) -->
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
 </head>
 <body>
-    <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="sidebar-header"><div class="sidebar-logo">Shining <span>Horizon</span></div></div>
+    <aside class="sidebar" id="admin-sidebar">
+        <div class="sidebar-header">
+            <a href="index.html"><img src="/static/logo/Shinning_Horizon_logo.png" alt="Shining Horizon" class="sidebar-logo-img"></a>
+            <button class="sidebar-close-btn" onclick="toggleSidebar()" aria-label="Collapse sidebar" title="Collapse sidebar">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
+            </button>
+        </div>
         <nav class="sidebar-nav">
-            <a href="index.html" class="nav-item"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>Dashboard</a>
+            <a href="index.html" class="nav-item">Dashboard</a>
             <div class="nav-section">Catalog</div>
-            <a href="categories.html" class="nav-item"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>Categories</a>
-            <a href="subcategories.html" class="nav-item"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>Subcategories</a>
-            <a href="products.html" class="nav-item active"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>Products</a>
-            <a href="brands.html" class="nav-item"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>Brands</a>
+            <a href="categories.html" class="nav-item">Categories</a>
+            <a href="subcategories.html" class="nav-item">Subcategories</a>
+            <a href="products.html" class="nav-item active">Products</a>
+            <a href="brands.html" class="nav-item">Brands</a>
+            <a href="import.html" class="nav-item" data-permission="delete">Import Data</a>
             <div class="nav-section">System</div>
-            <a href="users.html" class="nav-item"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>Users</a>
-            <a href="#" class="nav-item" onclick="authAPI.logout()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>Logout</a>
+            <a href="users.html" class="nav-item" data-permission="users">Users</a>
+            <a href="audit.html" class="nav-item" data-permission="audit">Audit Log</a>
+            <a href="#" class="nav-item" onclick="event.preventDefault(); authAPI.logout()">Logout</a>
         </nav>
     </aside>
-    
+
     <main class="main-content">
         <header class="header">
-            <div class="header-left"><h1 class="header-title">Products</h1></div>
+            <div class="header-left">                <h1 class="header-title">Products</h1>
+            </div>
             <div class="header-right">
                 <div class="user-menu">
                     <div class="user-avatar">A</div>
@@ -34,11 +45,11 @@
                 </div>
             </div>
         </header>
-        
+
         <div class="page-content">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">All Products</h3>
+                    <h3 class="card-title" id="results-title">All Products</h3>
                     <button class="btn btn-primary" onclick="openAddModal()">
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         Add Product
@@ -46,113 +57,181 @@
                 </div>
                 <div class="card-body">
                     <div class="filters">
+                        <input type="search" id="filter-search" class="form-input" placeholder="Search name or part number…" style="max-width: 280px;">
                         <select id="filter-category" class="filter-select" onchange="onCategoryChange()">
                             <option value="">All Categories</option>
                         </select>
-                        <select id="filter-subcategory" class="filter-select" onchange="loadProducts()">
+                        <select id="filter-subcategory" class="filter-select" onchange="reload()">
                             <option value="">All Subcategories</option>
                         </select>
-                        <select id="filter-brand" class="filter-select" onchange="loadProducts()">
+                        <select id="filter-brand" class="filter-select" onchange="reload()">
                             <option value="">All Brands</option>
                         </select>
+                        <select id="filter-status" class="filter-select" onchange="reload()">
+                            <option value="">All Statuses</option>
+                            <option value="published">Published</option>
+                            <option value="draft">Draft</option>
+                        </select>
                     </div>
+
+                    <!-- Bulk actions bar (Phase 4.15) -->
+                    <div id="bulk-bar" class="bulk-bar hidden">
+                        <strong><span id="bulk-count">0</span></strong> selected
+                        <span class="spacer"></span>
+                        <button class="btn btn-sm btn-secondary" onclick="runBulk('publish')" data-permission="publish">Publish</button>
+                        <button class="btn btn-sm btn-secondary" onclick="runBulk('unpublish')" data-permission="publish">Unpublish</button>
+                        <button class="btn btn-sm btn-danger" onclick="runBulk('delete')" data-permission="delete">Delete</button>
+                    </div>
+
                     <div class="table-container">
-                        <table>
+                        <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Image</th>
-                                    <th>Name / Part Number</th>
-                                    <th>Category</th>
-                                    <th>Brand</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
+                                    <th style="width:3%;"><input type="checkbox" id="select-all" onchange="toggleAll(this.checked)"></th>
+                                    <th style="width:7%;">Image</th>
+                                    <th style="width:22%;">Name / Part No.</th>
+                                    <th style="width:16%;">Category</th>
+                                    <th style="width:14%;">Brand</th>
+                                    <th style="width:12%;">Status</th>
+                                    <th style="width:26%;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="products-table">
-                                <tr><td colspan="6"><div class="loading"><div class="spinner"></div></div></td></tr>
+                                <tr><td colspan="7"><div class="loading"><div class="spinner"></div></div></td></tr>
                             </tbody>
                         </table>
+                    </div>
+
+                    <!-- Pagination (Phase 4.14) -->
+                    <div id="pagination" style="display:flex; align-items:center; justify-content:space-between; margin-top:14px;">
+                        <small id="pagination-info" style="color:#64748b;"></small>
+                        <div style="display:flex; gap: 6px;">
+                            <button class="btn btn-sm btn-secondary" id="pg-prev" onclick="goPage(-1)">Previous</button>
+                            <button class="btn btn-sm btn-secondary" id="pg-next" onclick="goPage(1)">Next</button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </main>
-    
-    <!-- Modal -->
+
     <div class="modal-overlay" id="product-modal">
-        <div class="modal" style="max-width: 700px;">
+        <div class="modal" style="max-width: 820px;">
             <div class="modal-header">
                 <h3 class="modal-title" id="modal-title">Add Product</h3>
-                <button class="modal-close" onclick="closeModal('product-modal')">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <a id="preview-link" class="preview-link" target="_blank" rel="noopener" style="display:none">Preview ↗</a>
+                    <button class="modal-close" onclick="closeModal('product-modal')">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
             </div>
             <form id="product-form" onsubmit="saveProduct(event)">
                 <div class="modal-body">
                     <input type="hidden" name="id" id="product-id">
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
                         <div class="form-group">
                             <label class="form-label">Category *</label>
-                            <select name="category_id" id="modal-category" class="form-select" required onchange="onModalCategoryChange()"></select>
+                            <select name="category_id" id="modal-category" class="form-select" onchange="onModalCategoryChange()">
+                                <option value="">— No category —</option>
+                            </select>
                         </div>
-                        
                         <div class="form-group" id="subcategory-group">
                             <label class="form-label">Subcategory</label>
                             <select name="subcategory_id" id="modal-subcategory" class="form-select"></select>
                         </div>
+                        <div class="form-group">
+                            <label class="form-label">Status *</label>
+                            <select name="status" class="form-select" required>
+                                <option value="draft">Draft</option>
+                                <option value="published">Published</option>
+                            </select>
+                        </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Product Name *</label>
                         <input type="text" name="name" class="form-input" required>
                     </div>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                         <div class="form-group">
                             <label class="form-label">Part Number</label>
                             <input type="text" name="part_number" class="form-input" placeholder="For detailed categories">
                         </div>
-                        
                         <div class="form-group">
                             <label class="form-label">Brand</label>
                             <select name="brand_id" id="modal-brand" class="form-select"></select>
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Short Description</label>
-                        <input type="text" name="short_description" class="form-input" placeholder="For simple category cards">
+                        <input type="text" name="short_description" class="form-input" placeholder="One line shown on product cards">
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Full Description</label>
-                        <textarea name="description" class="form-textarea" placeholder="Detailed product description"></textarea>
+                        <textarea name="description" id="product-description" class="form-textarea"></textarea>
+                        <div id="description-editor"></div>
                     </div>
-                    
+
                     <div class="form-group">
-                        <label class="form-label">Product Image</label>
+                        <label class="form-label">Primary Image (used in listings)</label>
                         <div class="image-upload" onclick="document.getElementById('image-input').click()">
                             <input type="file" id="image-input" accept="image/*" onchange="handleImageUpload(this)">
-                            <div id="image-preview">
-                                <svg width="40" height="40" fill="none" stroke="#9ca3af" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                </svg>
-                                <p style="margin-top: 8px; color: #64748b; font-size: 0.875rem;">Click to upload image</p>
-                            </div>
+                            <div id="image-preview"></div>
                         </div>
                         <input type="hidden" name="image" id="image-path">
                     </div>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+
+                    <div class="form-section">
+                        <h4>Image gallery</h4>
+                        <p style="color:#64748b; font-size:0.8125rem; margin: 0 0 8px;">Drag to reorder. The first image is shown first on the product page.</p>
+                        <input type="hidden" name="gallery" id="gallery-input" value="[]">
+                        <div id="gallery-container"></div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>Specifications</h4>
+                        <p style="color:#64748b; font-size:0.8125rem; margin: 0 0 8px;">Key/value rows shown in the technical-specifications table.</p>
+                        <input type="hidden" name="specifications" id="specs-input" value="[]">
+                        <div id="specs-container"></div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>Datasheet</h4>
                         <div class="form-group">
-                            <label class="form-label">Display Order</label>
-                            <input type="number" name="display_order" class="form-input" value="0">
+                            <label class="form-label">Datasheet URL (PDF or external link)</label>
+                            <input type="url" name="datasheet_url" class="form-input" placeholder="https://…">
                         </div>
-                        
-                        <div class="form-group" style="display: flex; flex-direction: column; justify-content: flex-end;">
-                            <label class="form-label"><input type="checkbox" name="is_active" checked> Active</label>
-                            <label class="form-label" style="margin-top: 8px;"><input type="checkbox" name="is_featured"> Featured</label>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>SEO</h4>
+                        <div class="form-group">
+                            <label class="form-label">Meta Title</label>
+                            <input type="text" name="meta_title" class="form-input" maxlength="160" placeholder="Defaults to product name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Meta Description</label>
+                            <textarea name="meta_description" class="form-textarea" maxlength="320" placeholder="Defaults to short description"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                            <div class="form-group">
+                                <label class="form-label">Display Order</label>
+                                <input type="number" name="display_order" class="form-input" value="0">
+                            </div>
+                            <div class="form-group" style="display:flex; align-items:flex-end;">
+                                <label class="form-label"><input type="checkbox" name="is_active" checked> Active</label>
+                            </div>
+                            <div class="form-group" style="display:flex; align-items:flex-end;">
+                                <label class="form-label"><input type="checkbox" name="is_featured"> Featured</label>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -163,59 +242,74 @@
             </form>
         </div>
     </div>
-    
+
     <div id="toast-container" class="toast-container"></div>
-    
+
+    <script src="assets/js/auth.js"></script>
     <script src="assets/js/api.js"></script>
     <script src="assets/js/utils.js"></script>
+    <script src="assets/js/editor.js"></script>
+    <script src="assets/js/gallery.js"></script>
+    <script src="assets/js/specs.js"></script>
     <script>
         if (!requireAuth()) {}
-        
+
         let categories = [];
-        let subcategories = [];
         let brands = [];
         let products = [];
-        
+        let totalProducts = 0;
+        let pageSize = 25;
+        let pageSkip = 0;
+        let editorMounted = false;
+        let galleryWidget = null;
+        let specsWidget = null;
+        let selectedIds = new Set();
+
+        const search = debounce(() => { pageSkip = 0; reload(); }, 300);
+
         document.addEventListener('DOMContentLoaded', async () => {
             initUserInfo();
+            applyRoleGates();
+            renderBlankPreview();
+            document.getElementById('filter-search').addEventListener('input', search);
             await Promise.all([loadCategories(), loadBrands()]);
-            await loadProducts();
+            await reload();
         });
-        
+
+        function blankPreview() {
+            return `<svg width="40" height="40" fill="none" stroke="#9ca3af" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg><p style="margin-top: 8px; color: #64748b; font-size: 0.875rem;">Click to upload image</p>`;
+        }
+        function renderBlankPreview() { document.getElementById('image-preview').innerHTML = blankPreview(); }
+
         async function loadCategories() {
-            categories = await categoriesAPI.getAll(true);
-            
+            categories = await categoriesAPI.getAll();
             const filterSelect = document.getElementById('filter-category');
-            filterSelect.innerHTML = '<option value="">All Categories</option>' + 
+            filterSelect.innerHTML = '<option value="">All Categories</option>' +
                 categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
-            
             const modalSelect = document.getElementById('modal-category');
-            modalSelect.innerHTML = '<option value="">Select Category</option>' + 
+            modalSelect.innerHTML = '<option value="">— No category —</option>' +
                 categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)} (${c.type})</option>`).join('');
         }
-        
+
         async function loadBrands() {
-            brands = await brandsAPI.getAll(true);
-            
+            brands = await brandsAPI.getAll();
             const filterSelect = document.getElementById('filter-brand');
-            filterSelect.innerHTML = '<option value="">All Brands</option>' + 
+            filterSelect.innerHTML = '<option value="">All Brands</option>' +
                 brands.map(b => `<option value="${b.id}">${escapeHtml(b.name)}</option>`).join('');
-            
             const modalSelect = document.getElementById('modal-brand');
-            modalSelect.innerHTML = '<option value="">No Brand</option>' + 
+            modalSelect.innerHTML = '<option value="">No Brand</option>' +
                 brands.map(b => `<option value="${b.id}">${escapeHtml(b.name)}</option>`).join('');
         }
-        
+
         async function onCategoryChange() {
             const categoryId = document.getElementById('filter-category').value;
             const subcatSelect = document.getElementById('filter-subcategory');
-            
             if (categoryId) {
-                const category = categories.find(c => c.id == categoryId);
-                if (category && category.type === 'detailed') {
-                    subcategories = await subcategoriesAPI.getAll(categoryId, true);
-                    subcatSelect.innerHTML = '<option value="">All Subcategories</option>' + 
-                        subcategories.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+                const cat = categories.find(c => c.id == categoryId);
+                if (cat && cat.type === 'detailed') {
+                    const subs = await subcategoriesAPI.getAll(categoryId);
+                    subcatSelect.innerHTML = '<option value="">All Subcategories</option>' +
+                        subs.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
                     subcatSelect.style.display = 'block';
                 } else {
                     subcatSelect.style.display = 'none';
@@ -224,22 +318,21 @@
             } else {
                 subcatSelect.innerHTML = '<option value="">All Subcategories</option>';
             }
-            
-            await loadProducts();
+            pageSkip = 0;
+            await reload();
         }
-        
+
         async function onModalCategoryChange() {
             const categoryId = document.getElementById('modal-category').value;
             const subcatGroup = document.getElementById('subcategory-group');
             const subcatSelect = document.getElementById('modal-subcategory');
-            
             if (categoryId) {
-                const category = categories.find(c => c.id == categoryId);
-                if (category && category.type === 'detailed') {
-                    const subs = await subcategoriesAPI.getAll(categoryId, true);
-                    subcatSelect.innerHTML = '<option value="">Select Subcategory</option>' + 
+                const cat = categories.find(c => c.id == categoryId);
+                if (cat && cat.type === 'detailed') {
+                    const subs = await subcategoriesAPI.getAll(categoryId);
+                    subcatSelect.innerHTML = '<option value="">Select Subcategory</option>' +
                         subs.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
-                    subcatGroup.style.display = 'block';
+                    subcatGroup.style.display = '';
                 } else {
                     subcatGroup.style.display = 'none';
                     subcatSelect.value = '';
@@ -248,113 +341,231 @@
                 subcatGroup.style.display = 'none';
             }
         }
-        
-        async function loadProducts() {
-            const filters = {
-                categoryId: document.getElementById('filter-category').value || null,
-                subcategoryId: document.getElementById('filter-subcategory').value || null,
-                brandId: document.getElementById('filter-brand').value || null,
+
+        async function reload() {
+            const params = {
+                category_id: document.getElementById('filter-category').value || null,
+                subcategory_id: document.getElementById('filter-subcategory').value || null,
+                brand_id: document.getElementById('filter-brand').value || null,
+                status: document.getElementById('filter-status').value || null,
+                search: document.getElementById('filter-search').value || null,
+                skip: pageSkip,
+                limit: pageSize,
             };
-            
-            products = await productsAPI.getAll(filters);
-            renderProducts();
+            try {
+                const res = await productsAPI.getAll(params);
+                products = res.items || [];
+                totalProducts = res.total || 0;
+                renderProducts();
+                renderPagination();
+                document.getElementById('results-title').textContent =
+                    totalProducts ? `${totalProducts.toLocaleString()} products` : 'All Products';
+            } catch (e) {
+                showToast('Failed to load products: ' + e.message, 'error');
+            }
         }
-        
+
         function renderProducts() {
             const tbody = document.getElementById('products-table');
-            
-            if (products.length === 0) {
+            if (!products.length) {
                 showEmptyState(tbody, 'No products found');
+                updateBulkBar();
                 return;
             }
-            
             tbody.innerHTML = products.map(p => `
                 <tr>
+                    <td><input type="checkbox" class="row-check" data-id="${p.id}" ${selectedIds.has(p.id) ? 'checked' : ''} onchange="toggleRow(${p.id}, this.checked)"></td>
                     <td>
-                        ${p.image 
-                            ? `<img src="../${p.image}" class="image-preview" alt="">`
-                            : '<div class="image-preview" style="background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 10px;">No img</div>'
-                        }
+                        ${p.image
+                            ? `<img src="${adminImageUrl(p.image, 'thumb')}" class="image-preview" alt="">`
+                            : '<div class="image-preview" style="background:#f1f5f9; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:10px;">No img</div>'}
                     </td>
-                    <td>
+                    <td class="wrap">
                         <strong>${escapeHtml(p.name)}</strong>
-                        ${p.part_number ? `<br><small style="color: #64748b;">${escapeHtml(p.part_number)}</small>` : ''}
+                        ${p.part_number ? `<br><small style="color:#64748b;">${escapeHtml(p.part_number)}</small>` : ''}
                     </td>
                     <td>
                         ${escapeHtml(p.category_name || '-')}
-                        ${p.subcategory_name ? `<br><small style="color: #64748b;">${escapeHtml(p.subcategory_name)}</small>` : ''}
+                        ${p.subcategory_name ? `<br><small style="color:#64748b;">${escapeHtml(p.subcategory_name)}</small>` : ''}
                     </td>
                     <td>${escapeHtml(p.brand_name || '-')}</td>
-                    <td><span class="badge ${p.is_active ? 'badge-success' : 'badge-danger'}">${p.is_active ? 'Active' : 'Inactive'}</span></td>
+                    <td>${renderStatusPill(p.status, p.is_active)}</td>
                     <td>
                         <div class="table-actions">
+                            <a href="${previewUrl('product', p.slug, p.status)}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary" title="${p.status === 'published' ? 'Open public page' : 'Preview draft (admin only)'}">${p.status === 'published' ? 'View' : 'Preview'}</a>
                             <button class="btn btn-sm btn-secondary" onclick="editProduct(${p.id})">Edit</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteProduct(${p.id})">Delete</button>
+                            ${canDelete() ? `<button class="btn btn-sm btn-danger" onclick="deleteProduct(${p.id})">Delete</button>` : ''}
                         </div>
                     </td>
                 </tr>
             `).join('');
+            updateBulkBar();
         }
-        
+
+        function renderPagination() {
+            const info = document.getElementById('pagination-info');
+            const prev = document.getElementById('pg-prev');
+            const next = document.getElementById('pg-next');
+            const start = totalProducts ? pageSkip + 1 : 0;
+            const end = Math.min(pageSkip + pageSize, totalProducts);
+            info.textContent = totalProducts ? `Showing ${start.toLocaleString()}–${end.toLocaleString()} of ${totalProducts.toLocaleString()}` : '';
+            prev.disabled = pageSkip <= 0;
+            next.disabled = end >= totalProducts;
+        }
+
+        function goPage(direction) {
+            pageSkip = Math.max(0, pageSkip + direction * pageSize);
+            reload();
+        }
+
+        function toggleAll(checked) {
+            if (checked) products.forEach(p => selectedIds.add(p.id));
+            else products.forEach(p => selectedIds.delete(p.id));
+            renderProducts();
+        }
+
+        function toggleRow(id, checked) {
+            if (checked) selectedIds.add(id);
+            else selectedIds.delete(id);
+            updateBulkBar();
+        }
+
+        function updateBulkBar() {
+            const bar = document.getElementById('bulk-bar');
+            const count = selectedIds.size;
+            document.getElementById('bulk-count').textContent = count;
+            bar.classList.toggle('hidden', count === 0);
+            const selectAll = document.getElementById('select-all');
+            if (selectAll) selectAll.checked = products.length > 0 && products.every(p => selectedIds.has(p.id));
+        }
+
+        async function runBulk(action) {
+            const ids = Array.from(selectedIds);
+            if (!ids.length) return;
+            const verb = action === 'delete' ? 'delete' : action;
+            if (!await confirmDialog(`${verb} ${ids.length} product${ids.length === 1 ? '' : 's'}?`)) return;
+            try {
+                const res = await productsAPI.bulk(ids, action);
+                showToast(`${action}: ${res.affected} of ${res.requested} affected`);
+                selectedIds.clear();
+                await reload();
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        function ensureWidgetsMounted() {
+            if (!editorMounted) {
+                RichEditor.mount({ textareaId: 'product-description', containerId: 'description-editor', placeholder: 'Full product description…' });
+                editorMounted = true;
+            }
+            if (!galleryWidget) {
+                galleryWidget = GalleryWidget.mount({ inputId: 'gallery-input', containerId: 'gallery-container', folder: 'products' });
+            }
+            if (!specsWidget) {
+                specsWidget = SpecsWidget.mount({ inputId: 'specs-input', containerId: 'specs-container' });
+            }
+        }
+
         function openAddModal() {
             document.getElementById('modal-title').textContent = 'Add Product';
             resetForm('product-form');
             document.getElementById('product-id').value = '';
             document.getElementById('image-path').value = '';
             document.getElementById('subcategory-group').style.display = 'none';
-            document.getElementById('image-preview').innerHTML = `
-                <svg width="40" height="40" fill="none" stroke="#9ca3af" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
-                <p style="margin-top: 8px; color: #64748b; font-size: 0.875rem;">Click to upload image</p>
-            `;
+            renderBlankPreview();
+            document.getElementById('preview-link').style.display = 'none';
+            document.querySelector('select[name="status"]').value = 'draft';
+            document.getElementById('gallery-input').value = '[]';
+            document.getElementById('specs-input').value = '[]';
+            document.getElementById('product-description').value = '';
+            ensureWidgetsMounted();
+            galleryWidget && galleryWidget.setValue([]);
+            specsWidget && specsWidget.setValue([]);
+            RichEditor.setValue('product-description', '');
             openModal('product-modal');
         }
-        
+
         async function editProduct(id) {
-            const p = products.find(prod => prod.id === id);
-            if (!p) return;
-            
+            // Backend already returned this row — but its short payload may not include
+            // gallery/specs/datasheet, so re-fetch the detail row for editing.
+            let p;
+            try { p = await productsAPI.getById(id); }
+            catch (e) { showToast(e.message, 'error'); return; }
+
             document.getElementById('modal-title').textContent = 'Edit Product';
             document.getElementById('product-id').value = p.id;
             document.getElementById('image-path').value = p.image || '';
-            
+
             const preview = document.getElementById('image-preview');
             if (p.image) {
-                preview.innerHTML = `<img src="../${p.image}" style="max-width: 100%; max-height: 150px; border-radius: 8px;">`;
+                preview.innerHTML = `<img src="${adminImageUrl(p.image, 'card')}" style="max-width:100%; max-height:150px; border-radius:8px;">`;
             } else {
-                preview.innerHTML = `
-                    <svg width="40" height="40" fill="none" stroke="#9ca3af" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                    <p style="margin-top: 8px; color: #64748b; font-size: 0.875rem;">Click to upload image</p>
-                `;
+                preview.innerHTML = blankPreview();
             }
-            
-            // Set category first, then load subcategories
+
             document.getElementById('modal-category').value = p.category_id;
             await onModalCategoryChange();
-            
-            fillForm('product-form', p);
+            if (p.subcategory_id) document.getElementById('modal-subcategory').value = p.subcategory_id;
+
+            fillForm('product-form', {
+                name: p.name,
+                part_number: p.part_number,
+                brand_id: p.brand_id,
+                short_description: p.short_description,
+                description: '', // editor handles this below
+                display_order: p.display_order,
+                is_active: p.is_active,
+                is_featured: p.is_featured,
+                status: p.status,
+                meta_title: p.meta_title,
+                meta_description: p.meta_description,
+                datasheet_url: p.datasheet_url,
+            });
+
+            ensureWidgetsMounted();
+            RichEditor.setValue('product-description', p.description || '');
+            galleryWidget.setValue(Array.isArray(p.gallery) ? p.gallery : []);
+            specsWidget.setValue(Array.isArray(p.specifications) ? p.specifications : []);
+
+            const link = document.getElementById('preview-link');
+            link.href = previewUrl('product', p.slug);
+            link.style.display = '';
+
             openModal('product-modal');
         }
-        
+
         async function saveProduct(e) {
             e.preventDefault();
             const id = document.getElementById('product-id').value;
             const data = getFormData('product-form');
             delete data.id;
-            
-            // Clean up empty values
+            if (!data.category_id) delete data.category_id;
             if (!data.subcategory_id) delete data.subcategory_id;
             if (!data.brand_id) delete data.brand_id;
-            
-            // Add image path if uploaded
             const imagePath = document.getElementById('image-path').value;
-            if (imagePath) {
-                data.image = imagePath;
+            if (imagePath) data.image = imagePath;
+
+            // Parse JSON-backed widgets
+            try { data.specifications = JSON.parse(document.getElementById('specs-input').value || '[]'); }
+            catch (e) { data.specifications = []; }
+            try { data.gallery = JSON.parse(document.getElementById('gallery-input').value || '[]'); }
+            catch (e) { data.gallery = []; }
+
+            ['meta_title', 'meta_description', 'datasheet_url'].forEach(k => { if (data[k] === '') delete data[k]; });
+
+            // Strip inline background-color and color styles injected by Quill's dark-theme detection
+            if (data.description) {
+                const tmp = document.createElement('div');
+                tmp.innerHTML = data.description;
+                tmp.querySelectorAll('[style]').forEach(el => {
+                    el.style.removeProperty('background-color');
+                    el.style.removeProperty('color');
+                    if (!el.getAttribute('style').trim()) el.removeAttribute('style');
+                });
+                data.description = tmp.innerHTML;
             }
-            
+
             try {
                 if (id) {
                     await productsAPI.update(id, data);
@@ -364,36 +575,35 @@
                     showToast('Product created');
                 }
                 closeModal('product-modal');
-                await loadProducts();
+                await reload();
             } catch (error) {
                 showToast(error.message, 'error');
             }
         }
-        
+
         async function handleImageUpload(input) {
             const file = input.files[0];
             if (!file) return;
-            
             const preview = document.getElementById('image-preview');
             preview.innerHTML = '<div class="spinner"></div>';
-            
             try {
                 const result = await uploadAPI.uploadImage(file, 'products');
                 document.getElementById('image-path').value = result.path;
-                preview.innerHTML = `<img src="../${result.path}" style="max-width: 100%; max-height: 150px; border-radius: 8px;">`;
+                preview.innerHTML = `<img src="${adminImageUrl(result.path, 'card')}" style="max-width:100%; max-height:150px; border-radius:8px;">`;
                 showToast('Image uploaded');
             } catch (error) {
-                preview.innerHTML = `<p style="color: #dc2626;">Upload failed: ${error.message}</p>`;
+                preview.innerHTML = `<p style="color:#dc2626;">Upload failed: ${error.message}</p>`;
                 showToast('Upload failed', 'error');
             }
         }
-        
+
         async function deleteProduct(id) {
             if (!await confirmDialog('Delete this product?')) return;
             try {
                 await productsAPI.delete(id);
                 showToast('Product deleted');
-                await loadProducts();
+                selectedIds.delete(id);
+                await reload();
             } catch (error) {
                 showToast(error.message, 'error');
             }

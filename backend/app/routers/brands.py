@@ -1,59 +1,83 @@
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 from ..database import get_db
-from ..schemas.brand import BrandCreate, BrandUpdate, BrandResponse
-from ..services.brand import BrandService
-from ..services.auth import get_current_user
+from ..models._common import ContentStatus
+from ..models.brand import Brand
 from ..models.user import User
+from ..schemas.brand import BrandCreate, BrandResponse, BrandUpdate
+from ..services.auth import get_current_user
+from ..services.brand import BrandService
+from ..services.permissions import enforce_status_change, require_delete
+
 
 router = APIRouter(prefix="/brands", tags=["Brands"])
 
+
+def _client_ip(request: Request) -> Optional[str]:
+    return request.client.host if request.client else None
+
+
 @router.get("/", response_model=List[BrandResponse])
 def get_brands(
-    include_inactive: bool = Query(False),
+    include_inactive: bool = Query(True),
+    status: Optional[ContentStatus] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    brands = BrandService.get_all(db, include_inactive)
-    return [BrandService.get_with_counts(db, brand) for brand in brands]
+    query = db.query(Brand)
+    if not include_inactive:
+        query = query.filter(Brand.is_active == True)  # noqa: E712
+    if status is not None:
+        query = query.filter(Brand.status == status)
+    rows = query.order_by(Brand.display_order, Brand.name).all()
+    return [BrandService.get_with_counts(db, b) for b in rows]
+
 
 @router.get("/{brand_id}", response_model=BrandResponse)
 def get_brand(
     brand_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     brand = BrandService.get_by_id(db, brand_id)
     if not brand:
         raise HTTPException(status_code=404, detail="Brand not found")
     return BrandService.get_with_counts(db, brand)
 
+
 @router.post("/", response_model=BrandResponse)
 def create_brand(
     brand_data: BrandCreate,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    brand = BrandService.create(db, brand_data)
+    enforce_status_change(current_user, getattr(brand_data, "status", None))
+    brand = BrandService.create(db, brand_data, actor_id=current_user.id, ip=_client_ip(request))
     return BrandService.get_with_counts(db, brand)
+
 
 @router.put("/{brand_id}", response_model=BrandResponse)
 def update_brand(
     brand_id: int,
     brand_data: BrandUpdate,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    brand = BrandService.update(db, brand_id, brand_data)
+    enforce_status_change(current_user, getattr(brand_data, "status", None))
+    brand = BrandService.update(db, brand_id, brand_data, actor_id=current_user.id, ip=_client_ip(request))
     return BrandService.get_with_counts(db, brand)
+
 
 @router.delete("/{brand_id}")
 def delete_brand(
     brand_id: int,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_delete),
 ):
-    BrandService.delete(db, brand_id)
+    BrandService.delete(db, brand_id, actor_id=current_user.id, ip=_client_ip(request))
     return {"message": "Brand deleted successfully"}

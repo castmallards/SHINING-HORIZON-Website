@@ -1,0 +1,92 @@
+# ──────────────────────────────────────────────────────────────────────
+# Shining Horizon — production Nginx config example
+# Covers Phase 5.4 (HTTPS redirect) and Phase 7.8 (Nginx switch).
+#
+# Assumes:
+#   * uvicorn is running on 127.0.0.1:8000 (managed by systemd, see
+#     `deploy/shining-horizon.service` for an example unit file).
+#   * Let's Encrypt certificates are at /etc/letsencrypt/live/<domain>/
+#     (run `certbot --nginx -d shininghorizon.com -d www.shininghorizon.com`
+#     before pointing DNS).
+#   * `ENABLE_HSTS=true` is set in `backend/.env` so the app emits HSTS too.
+# ──────────────────────────────────────────────────────────────────────
+
+# 1. Plain HTTP → permanent redirect to HTTPS.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name shininghorizon.com www.shininghorizon.com;
+
+    # Allow ACME http-01 challenge for cert renewals.
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# 2. www → apex (pick one canonical host).
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name www.shininghorizon.com;
+
+    ssl_certificate     /etc/letsencrypt/live/shininghorizon.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/shininghorizon.com/privkey.pem;
+
+    return 301 https://shininghorizon.com$request_uri;
+}
+
+# 3. Apex HTTPS host — proxies to uvicorn.
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name shininghorizon.com;
+
+    ssl_certificate     /etc/letsencrypt/live/shininghorizon.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/shininghorizon.com/privkey.pem;
+
+    # Modern TLS profile — drop everything below TLS 1.2.
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+
+    # Upload size — must be >= MAX_UPLOAD_SIZE in app config (default 5 MB).
+    client_max_body_size 10M;
+
+    # Reasonable timeouts for long catalog list responses.
+    proxy_read_timeout 60s;
+    proxy_connect_timeout 30s;
+
+    # Cache uploaded media aggressively at the edge.
+    location /uploads/ {
+        alias /opt/shining-horizon/backend/uploads/;
+        access_log off;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Versionable static assets (logos, brand images).
+    location /static/ {
+        alias /opt/shining-horizon/public/;
+        access_log off;
+        expires 7d;
+        add_header Cache-Control "public";
+    }
+
+    # Everything else → uvicorn. Pass real client IP so the slowapi
+    # rate limiter throttles per actual user, not per Nginx.
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}

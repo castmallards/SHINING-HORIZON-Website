@@ -1,332 +1,177 @@
-// API Configuration and Helper Functions
-const API_BASE = 'http://localhost:8000';
+// Admin API client (Phase 4.1 + 4.2).
+// All endpoints live under /api/* on the same origin as the admin SPA,
+// so cookies are sent automatically. Mutating requests carry the
+// double-submit CSRF header read from the csrf_token cookie.
 
-// Get stored token
-function getToken() {
-    return localStorage.getItem('admin_token');
-}
+const API_BASE = '/api';
+const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
-// Set token
-function setToken(token) {
-    localStorage.setItem('admin_token', token);
-}
-
-// Remove token
-function removeToken() {
-    localStorage.removeItem('admin_token');
-    localStorage.removeItem('admin_user');
-}
-
-// Get current user
-function getCurrentUser() {
-    const user = localStorage.getItem('admin_user');
-    return user ? JSON.parse(user) : null;
-}
-
-// Set current user
-function setCurrentUser(user) {
-    localStorage.setItem('admin_user', JSON.stringify(user));
-}
-
-// Check if logged in
-function isLoggedIn() {
-    return !!getToken();
-}
-
-// Redirect to login if not authenticated
-function requireAuth() {
-    if (!isLoggedIn()) {
-        window.location.href = 'login.html';
-        return false;
-    }
-    return true;
-}
-
-// API Request helper
 async function apiRequest(endpoint, options = {}) {
-    const token = getToken();
-    
-    const defaultHeaders = {
-        'Content-Type': 'application/json',
-    };
-    
-    if (token) {
-        defaultHeaders['Authorization'] = `Bearer ${token}`;
+    const method = (options.method || 'GET').toUpperCase();
+    const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+
+    if (MUTATING_METHODS.has(method)) {
+        const token = getCsrfToken();
+        if (token) headers['X-CSRF-Token'] = token;
     }
-    
-    const config = {
+
+    const response = await fetch(`${API_BASE}${endpoint}`, {
         ...options,
-        headers: {
-            ...defaultHeaders,
-            ...options.headers,
-        },
-    };
-    
-    try {
-        const response = await fetch(`${API_BASE}${endpoint}`, config);
-        
-        if (response.status === 401) {
-            removeToken();
-            window.location.href = 'login.html';
-            return null;
-        }
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.detail || 'An error occurred');
-        }
-        
-        return data;
-    } catch (error) {
-        console.error('API Error:', error);
-        throw error;
+        method,
+        headers,
+        credentials: 'same-origin',
+    });
+
+    // Auto-redirect to login on session expiry. Skip for /auth/login itself
+    // so the login form can surface the error inline.
+    if (response.status === 401 && !endpoint.startsWith('/auth/login')) {
+        clearCachedUser();
+        if (typeof redirectToLogin === 'function') redirectToLogin();
+        throw new Error('Session expired. Please sign in again.');
     }
+
+    let data = null;
+    if (response.status !== 204) {
+        try { data = await response.json(); }
+        catch (e) { data = null; }
+    }
+
+    if (!response.ok) {
+        const detail = (data && (data.detail || data.message)) || `Request failed (${response.status})`;
+        throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail));
+    }
+    return data;
 }
 
-// Auth API
+// ─── Auth ──────────────────────────────────────────────────────────────
+
 const authAPI = {
-    login: async (username, password) => {
+    async login(username, password) {
         const data = await apiRequest('/auth/login', {
             method: 'POST',
             body: JSON.stringify({ username, password }),
         });
-        if (data) {
-            setToken(data.access_token);
-            setCurrentUser(data.user);
-        }
+        if (data && data.user) setCachedUser(data.user);
         return data;
     },
-    
-    logout: () => {
-        removeToken();
-        window.location.href = 'login.html';
+    async logout() {
+        try { await apiRequest('/auth/logout', { method: 'POST' }); }
+        catch (e) { /* ignore — cookie may already be gone */ }
+        clearCachedUser();
+        window.location.href = ADMIN_LOGIN_PAGE;
     },
-    
     getMe: () => apiRequest('/auth/me'),
 };
 
-// Categories API
+// ─── Resources ────────────────────────────────────────────────────────
+
+function buildQuery(params) {
+    const q = new URLSearchParams();
+    Object.entries(params || {}).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== '') q.append(k, v);
+    });
+    const s = q.toString();
+    return s ? `?${s}` : '';
+}
+
 const categoriesAPI = {
-    getAll: (includeInactive = true) => 
-        apiRequest(`/categories?include_inactive=${includeInactive}`),
-    
+    getAll: (params = {}) => apiRequest(`/categories/${buildQuery({ include_inactive: true, ...params })}`),
     getById: (id) => apiRequest(`/categories/${id}`),
-    
-    create: (data) => apiRequest('/categories', {
-        method: 'POST',
-        body: JSON.stringify(data),
-    }),
-    
-    update: (id, data) => apiRequest(`/categories/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-    }),
-    
-    delete: (id) => apiRequest(`/categories/${id}`, {
-        method: 'DELETE',
-    }),
+    create: (data) => apiRequest('/categories/', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => apiRequest(`/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => apiRequest(`/categories/${id}`, { method: 'DELETE' }),
 };
 
-// Subcategories API
 const subcategoriesAPI = {
-    getAll: (categoryId = null, includeInactive = true) => {
-        let url = `/subcategories?include_inactive=${includeInactive}`;
-        if (categoryId) url += `&category_id=${categoryId}`;
-        return apiRequest(url);
-    },
-    
+    getAll: (categoryId = null, params = {}) =>
+        apiRequest(`/subcategories/${buildQuery({ include_inactive: true, category_id: categoryId, ...params })}`),
     getById: (id) => apiRequest(`/subcategories/${id}`),
-    
-    create: (data) => apiRequest('/subcategories', {
-        method: 'POST',
-        body: JSON.stringify(data),
-    }),
-    
-    update: (id, data) => apiRequest(`/subcategories/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-    }),
-    
-    delete: (id) => apiRequest(`/subcategories/${id}`, {
-        method: 'DELETE',
-    }),
+    create: (data) => apiRequest('/subcategories/', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => apiRequest(`/subcategories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => apiRequest(`/subcategories/${id}`, { method: 'DELETE' }),
 };
 
-// Products API
-const productsAPI = {
-    getAll: (filters = {}) => {
-        const params = new URLSearchParams();
-        if (filters.categoryId) params.append('category_id', filters.categoryId);
-        if (filters.subcategoryId) params.append('subcategory_id', filters.subcategoryId);
-        if (filters.brandId) params.append('brand_id', filters.brandId);
-        params.append('include_inactive', 'true');
-        params.append('limit', '500');
-        return apiRequest(`/products?${params.toString()}`);
-    },
-    
-    getById: (id) => apiRequest(`/products/${id}`),
-    
-    create: (data) => apiRequest('/products', {
-        method: 'POST',
-        body: JSON.stringify(data),
-    }),
-    
-    update: (id, data) => apiRequest(`/products/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-    }),
-    
-    delete: (id) => apiRequest(`/products/${id}`, {
-        method: 'DELETE',
-    }),
-};
-
-// Brands API
 const brandsAPI = {
-    getAll: (includeInactive = true) => 
-        apiRequest(`/brands?include_inactive=${includeInactive}`),
-    
+    getAll: (params = {}) => apiRequest(`/brands/${buildQuery({ include_inactive: true, ...params })}`),
     getById: (id) => apiRequest(`/brands/${id}`),
-    
-    create: (data) => apiRequest('/brands', {
-        method: 'POST',
-        body: JSON.stringify(data),
-    }),
-    
-    update: (id, data) => apiRequest(`/brands/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-    }),
-    
-    delete: (id) => apiRequest(`/brands/${id}`, {
-        method: 'DELETE',
-    }),
+    create: (data) => apiRequest('/brands/', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => apiRequest(`/brands/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => apiRequest(`/brands/${id}`, { method: 'DELETE' }),
 };
 
-// Users API
+const productsAPI = {
+    // Returns { items, total, skip, limit }. Pass {category_id, subcategory_id,
+    // brand_id, status, search, skip, limit, include_inactive} to filter.
+    getAll: (params = {}) => apiRequest(`/products/${buildQuery({ include_inactive: true, limit: 50, ...params })}`),
+    getById: (id) => apiRequest(`/products/${id}`),
+    create: (data) => apiRequest('/products/', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => apiRequest(`/products/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => apiRequest(`/products/${id}`, { method: 'DELETE' }),
+    bulk: (ids, action) => apiRequest('/products/bulk', { method: 'POST', body: JSON.stringify({ ids, action }) }),
+    validation: () => apiRequest('/products/validation'),
+};
+
 const usersAPI = {
-    getAll: () => apiRequest('/users'),
-    
+    getAll: () => apiRequest('/users/'),
     getById: (id) => apiRequest(`/users/${id}`),
-    
-    create: (data) => apiRequest('/users', {
-        method: 'POST',
-        body: JSON.stringify(data),
-    }),
-    
-    update: (id, data) => apiRequest(`/users/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-    }),
-    
-    delete: (id) => apiRequest(`/users/${id}`, {
-        method: 'DELETE',
-    }),
+    create: (data) => apiRequest('/users/', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => apiRequest(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => apiRequest(`/users/${id}`, { method: 'DELETE' }),
 };
 
-// Upload API
+const auditAPI = {
+    list: (params = {}) => apiRequest(`/audit/${buildQuery(params)}`),
+};
+
 const uploadAPI = {
     uploadImage: async (file, folder) => {
         const formData = new FormData();
         formData.append('file', file);
-        
-        const token = getToken();
+        const headers = {};
+        const token = getCsrfToken();
+        if (token) headers['X-CSRF-Token'] = token;
+
         const response = await fetch(`${API_BASE}/upload/image/${folder}`, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
+            credentials: 'same-origin',
+            headers,
             body: formData,
         });
-        
+        if (response.status === 401) {
+            clearCachedUser();
+            redirectToLogin();
+            throw new Error('Session expired. Please sign in again.');
+        }
         if (!response.ok) {
-            const error = await response.json();
+            const error = await response.json().catch(() => ({}));
             throw new Error(error.detail || 'Upload failed');
         }
-        
         return response.json();
     },
 };
 
-// Generator API
-const generatorAPI = {
-    generateAll: () => apiRequest('/generate/all', { method: 'POST' }),
-    
-    generateCategory: (id) => apiRequest(`/generate/category/${id}`, { method: 'POST' }),
-};
-
-// Import API
 const importAPI = {
-    importCategories: async (file) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        const token = getToken();
-        const response = await fetch(`${API_BASE}/import/categories`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData,
-        });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'Import failed');
-        }
-        return response.json();
-    },
-    
-    importSubcategories: async (file) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        const token = getToken();
-        const response = await fetch(`${API_BASE}/import/subcategories`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData,
-        });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'Import failed');
-        }
-        return response.json();
-    },
-    
-    importBrands: async (file) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        const token = getToken();
-        const response = await fetch(`${API_BASE}/import/brands`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData,
-        });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'Import failed');
-        }
-        return response.json();
-    },
-    
-    importProducts: async (file) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        const token = getToken();
-        const response = await fetch(`${API_BASE}/import/products`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData,
-        });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'Import failed');
-        }
-        return response.json();
-    },
+    importCategories: (file) => importFile('/import/categories', file),
+    importSubcategories: (file) => importFile('/import/subcategories', file),
+    importBrands: (file) => importFile('/import/brands', file),
+    importProducts: (file) => importFile('/import/products', file),
 };
+
+async function importFile(endpoint, file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const headers = {};
+    const token = getCsrfToken();
+    if (token) headers['X-CSRF-Token'] = token;
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers,
+        body: formData,
+    });
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.detail || 'Import failed');
+    }
+    return response.json();
+}

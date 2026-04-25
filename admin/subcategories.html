@@ -5,30 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Subcategories - Shining Horizon Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="/static/logo/Shinning_Horizon_logo.png" type="image/png">
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
-    <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="admin-sidebar">
         <div class="sidebar-header">
-            <div class="sidebar-logo">Shining <span>Horizon</span></div>
+            <a href="index.html"><img src="/static/logo/Shinning_Horizon_logo.png" alt="Shining Horizon" class="sidebar-logo-img"></a>
+            <button class="sidebar-close-btn" onclick="toggleSidebar()" aria-label="Collapse sidebar" title="Collapse sidebar">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
+            </button>
         </div>
         <nav class="sidebar-nav">
-            <a href="index.html" class="nav-item"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>Dashboard</a>
+            <a href="index.html" class="nav-item">Dashboard</a>
             <div class="nav-section">Catalog</div>
-            <a href="categories.html" class="nav-item"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>Categories</a>
-            <a href="subcategories.html" class="nav-item active"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>Subcategories</a>
-            <a href="products.html" class="nav-item"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>Products</a>
-            <a href="brands.html" class="nav-item"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>Brands</a>
+            <a href="categories.html" class="nav-item">Categories</a>
+            <a href="subcategories.html" class="nav-item active">Subcategories</a>
+            <a href="products.html" class="nav-item">Products</a>
+            <a href="brands.html" class="nav-item">Brands</a>
+            <a href="import.html" class="nav-item" data-permission="delete">Import Data</a>
             <div class="nav-section">System</div>
-            <a href="users.html" class="nav-item"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>Users</a>
-            <a href="#" class="nav-item" onclick="authAPI.logout()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>Logout</a>
+            <a href="users.html" class="nav-item" data-permission="users">Users</a>
+            <a href="audit.html" class="nav-item" data-permission="audit">Audit Log</a>
+            <a href="#" class="nav-item" onclick="event.preventDefault(); authAPI.logout()">Logout</a>
         </nav>
     </aside>
-    
+
     <main class="main-content">
         <header class="header">
-            <div class="header-left"><h1 class="header-title">Subcategories</h1></div>
+            <div class="header-left">                <h1 class="header-title">Subcategories</h1>
+            </div>
             <div class="header-right">
                 <div class="user-menu">
                     <div class="user-avatar">A</div>
@@ -36,7 +42,7 @@
                 </div>
             </div>
         </header>
-        
+
         <div class="page-content">
             <div class="card">
                 <div class="card-header">
@@ -51,17 +57,22 @@
                         <select id="filter-category" class="filter-select" onchange="loadSubcategories()">
                             <option value="">All Categories</option>
                         </select>
+                        <select id="filter-status" class="filter-select" onchange="loadSubcategories()">
+                            <option value="">All Statuses</option>
+                            <option value="published">Published</option>
+                            <option value="draft">Draft</option>
+                        </select>
                     </div>
                     <div class="table-container">
-                        <table>
+                        <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Image</th>
-                                    <th>Name</th>
-                                    <th>Category</th>
-                                    <th>Products</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
+                                    <th class="col-img" style="width:8%;">Image</th>
+                                    <th style="width:22%;">Name</th>
+                                    <th style="width:18%;">Category</th>
+                                    <th class="num" style="width:12%;">Products</th>
+                                    <th style="width:12%;">Status</th>
+                                    <th style="width:28%;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="subcategories-table">
@@ -73,56 +84,77 @@
             </div>
         </div>
     </main>
-    
-    <!-- Modal -->
+
     <div class="modal-overlay" id="subcategory-modal">
-        <div class="modal">
+        <div class="modal" style="max-width: 720px;">
             <div class="modal-header">
                 <h3 class="modal-title" id="modal-title">Add Subcategory</h3>
-                <button class="modal-close" onclick="closeModal('subcategory-modal')">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <a id="preview-link" class="preview-link" target="_blank" rel="noopener" style="display:none">Preview ↗</a>
+                    <button class="modal-close" onclick="closeModal('subcategory-modal')">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
             </div>
             <form id="subcategory-form" onsubmit="saveSubcategory(event)">
                 <div class="modal-body">
                     <input type="hidden" name="id" id="subcategory-id">
-                    
-                    <div class="form-group">
-                        <label class="form-label">Category *</label>
-                        <select name="category_id" id="modal-category" class="form-select" required></select>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group">
+                            <label class="form-label">Category *</label>
+                            <select name="category_id" id="modal-category" class="form-select" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Status *</label>
+                            <select name="status" class="form-select" required>
+                                <option value="draft">Draft</option>
+                                <option value="published">Published</option>
+                            </select>
+                        </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Name *</label>
                         <input type="text" name="name" class="form-input" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Description</label>
                         <textarea name="description" class="form-textarea"></textarea>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Subcategory Image</label>
                         <div class="image-upload" onclick="document.getElementById('image-input').click()">
                             <input type="file" id="image-input" accept="image/*" onchange="handleImageUpload(this)">
-                            <div id="image-preview">
-                                <svg width="40" height="40" fill="none" stroke="#9ca3af" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                </svg>
-                                <p style="margin-top: 8px; color: #64748b; font-size: 0.875rem;">Click to upload image</p>
-                            </div>
+                            <div id="image-preview"></div>
                         </div>
                         <input type="hidden" name="image" id="image-path">
                     </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Display Order</label>
-                        <input type="number" name="display_order" class="form-input" value="0">
+
+                    <div class="form-section">
+                        <h4>SEO</h4>
+                        <div class="form-group">
+                            <label class="form-label">Meta Title</label>
+                            <input type="text" name="meta_title" class="form-input" maxlength="160">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Meta Description</label>
+                            <textarea name="meta_description" class="form-textarea" maxlength="320"></textarea>
+                        </div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label"><input type="checkbox" name="is_active" checked> Active</label>
+
+                    <div class="form-section">
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div class="form-group">
+                                <label class="form-label">Display Order</label>
+                                <input type="number" name="display_order" class="form-input" value="0">
+                            </div>
+                            <div class="form-group" style="display:flex; align-items:flex-end;">
+                                <label class="form-label"><input type="checkbox" name="is_active" checked> Active</label>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -132,123 +164,135 @@
             </form>
         </div>
     </div>
-    
+
     <div id="toast-container" class="toast-container"></div>
-    
+
+    <script src="assets/js/auth.js"></script>
     <script src="assets/js/api.js"></script>
     <script src="assets/js/utils.js"></script>
     <script>
         if (!requireAuth()) {}
-        
+
         let categories = [];
         let subcategories = [];
-        
+
         document.addEventListener('DOMContentLoaded', async () => {
             initUserInfo();
+            applyRoleGates();
+            renderBlankPreview();
             await loadCategories();
             await loadSubcategories();
         });
-        
-        async function loadCategories() {
-            categories = await categoriesAPI.getAll(true);
-            // Only show detailed categories (they have subcategories)
-            const detailedCategories = categories.filter(c => c.type === 'detailed');
-            
-            const filterSelect = document.getElementById('filter-category');
-            filterSelect.innerHTML = '<option value="">All Categories</option>' + 
-                detailedCategories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
-            
-            const modalSelect = document.getElementById('modal-category');
-            modalSelect.innerHTML = '<option value="">Select Category</option>' + 
-                detailedCategories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+
+        function blankPreview() {
+            return `<svg width="40" height="40" fill="none" stroke="#9ca3af" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg><p style="margin-top: 8px; color: #64748b; font-size: 0.875rem;">Click to upload image</p>`;
         }
-        
+        function renderBlankPreview() { document.getElementById('image-preview').innerHTML = blankPreview(); }
+
+        async function loadCategories() {
+            categories = await categoriesAPI.getAll();
+            const detailed = categories.filter(c => c.type === 'detailed');
+            const filterSelect = document.getElementById('filter-category');
+            filterSelect.innerHTML = '<option value="">All Categories</option>' +
+                detailed.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+            const modalSelect = document.getElementById('modal-category');
+            modalSelect.innerHTML = '<option value="">Select Category</option>' +
+                detailed.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+        }
+
         async function loadSubcategories() {
             const categoryId = document.getElementById('filter-category').value || null;
-            subcategories = await subcategoriesAPI.getAll(categoryId, true);
-            renderSubcategories();
+            const status = document.getElementById('filter-status').value || null;
+            try {
+                subcategories = await subcategoriesAPI.getAll(categoryId, { status });
+                renderSubcategories();
+            } catch (e) {
+                showToast('Failed to load subcategories: ' + e.message, 'error');
+            }
         }
-        
+
         function renderSubcategories() {
             const tbody = document.getElementById('subcategories-table');
-            
-            if (subcategories.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg><h3>No subcategories found</h3><p>Click the button above to add a new item</p></div></td></tr>';
+            if (!subcategories.length) {
+                showEmptyState(tbody, 'No subcategories found');
                 return;
             }
-            
-            tbody.innerHTML = subcategories.map(sub => `
+            tbody.innerHTML = subcategories.map(sub => {
+                const cat = categories.find(c => c.id === sub.category_id);
+                const composite = cat ? `${cat.slug}/${sub.slug}` : null;
+                // Subcategory URL is composite (cat-slug/sub-slug). Reuse previewUrl()
+                // to get the ?preview=1 suffix when status !== published.
+                const viewHref = composite ? previewUrl('subcategory', composite, sub.status) : null;
+                const viewLabel = sub.status === 'published' ? 'View' : 'Preview';
+                return `
                 <tr>
-                    <td>
-                        ${sub.image 
-                            ? `<img src="../${sub.image}" class="image-preview" alt="${escapeHtml(sub.name)}">`
-                            : '<div class="image-preview" style="background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 10px;">No img</div>'
-                        }
+                    <td class="col-img">
+                        ${sub.image
+                            ? `<img src="${adminImageUrl(sub.image, 'thumb')}" class="image-preview" alt="${escapeHtml(sub.name)}">`
+                            : '<div class="image-preview" style="background:#f1f5f9; display:flex; align-items:center; justify-content:center; color:#94a3b8;">No img</div>'}
                     </td>
-                    <td><strong>${escapeHtml(sub.name)}</strong><br><small style="color: #64748b;">${sub.slug}</small></td>
+                    <td class="wrap"><strong>${escapeHtml(sub.name)}</strong><br><small style="color:#64748b;">${sub.slug}</small></td>
                     <td>${escapeHtml(sub.category_name || '-')}</td>
-                    <td>${sub.product_count || 0}</td>
-                    <td><span class="badge ${sub.is_active ? 'badge-success' : 'badge-danger'}">${sub.is_active ? 'Active' : 'Inactive'}</span></td>
+                    <td class="num">${sub.product_count || 0}</td>
+                    <td>${renderStatusPill(sub.status, sub.is_active)}</td>
                     <td>
                         <div class="table-actions">
+                            ${viewHref ? `<a href="${viewHref}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary" title="${sub.status === 'published' ? 'Open public page' : 'Preview draft (admin only)'}">${viewLabel}</a>` : ''}
                             <button class="btn btn-sm btn-secondary" onclick="editSubcategory(${sub.id})">Edit</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteSubcategory(${sub.id})">Delete</button>
+                            ${canDelete() ? `<button class="btn btn-sm btn-danger" onclick="deleteSubcategory(${sub.id})">Delete</button>` : ''}
                         </div>
                     </td>
-                </tr>
-            `).join('');
+                </tr>`;
+            }).join('');
         }
-        
+
         function openAddModal() {
             document.getElementById('modal-title').textContent = 'Add Subcategory';
             resetForm('subcategory-form');
             document.getElementById('subcategory-id').value = '';
             document.getElementById('image-path').value = '';
-            document.getElementById('image-preview').innerHTML = `
-                <svg width="40" height="40" fill="none" stroke="#9ca3af" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
-                <p style="margin-top: 8px; color: #64748b; font-size: 0.875rem;">Click to upload image</p>
-            `;
+            renderBlankPreview();
+            document.getElementById('preview-link').style.display = 'none';
+            document.querySelector('select[name="status"]').value = 'draft';
             openModal('subcategory-modal');
         }
-        
+
         function editSubcategory(id) {
             const sub = subcategories.find(s => s.id === id);
             if (!sub) return;
-            
             document.getElementById('modal-title').textContent = 'Edit Subcategory';
             document.getElementById('subcategory-id').value = sub.id;
             document.getElementById('image-path').value = sub.image || '';
-            
+
             const preview = document.getElementById('image-preview');
             if (sub.image) {
-                preview.innerHTML = `<img src="../${sub.image}" style="max-width: 100%; max-height: 150px; border-radius: 8px;">`;
+                preview.innerHTML = `<img src="${adminImageUrl(sub.image, 'card')}" style="max-width:100%; max-height:150px; border-radius:8px;">`;
             } else {
-                preview.innerHTML = `
-                    <svg width="40" height="40" fill="none" stroke="#9ca3af" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                    <p style="margin-top: 8px; color: #64748b; font-size: 0.875rem;">Click to upload image</p>
-                `;
+                preview.innerHTML = blankPreview();
             }
-            
+
             fillForm('subcategory-form', sub);
+
+            const cat = categories.find(c => c.id === sub.category_id);
+            const link = document.getElementById('preview-link');
+            if (cat) {
+                link.href = `/category/${cat.slug}/${sub.slug}`;
+                link.style.display = '';
+            } else {
+                link.style.display = 'none';
+            }
+
             openModal('subcategory-modal');
         }
-        
+
         async function saveSubcategory(e) {
             e.preventDefault();
             const id = document.getElementById('subcategory-id').value;
             const data = getFormData('subcategory-form');
             delete data.id;
-            
-            // Add image path if uploaded
             const imagePath = document.getElementById('image-path').value;
-            if (imagePath) {
-                data.image = imagePath;
-            }
-            
+            if (imagePath) data.image = imagePath;
+            ['meta_title', 'meta_description'].forEach(k => { if (!data[k]) delete data[k]; });
             try {
                 if (id) {
                     await subcategoriesAPI.update(id, data);
@@ -263,25 +307,23 @@
                 showToast(error.message, 'error');
             }
         }
-        
+
         async function handleImageUpload(input) {
             const file = input.files[0];
             if (!file) return;
-            
             const preview = document.getElementById('image-preview');
             preview.innerHTML = '<div class="spinner"></div>';
-            
             try {
                 const result = await uploadAPI.uploadImage(file, 'subcategories');
                 document.getElementById('image-path').value = result.path;
-                preview.innerHTML = `<img src="../${result.path}" style="max-width: 100%; max-height: 150px; border-radius: 8px;">`;
+                preview.innerHTML = `<img src="${adminImageUrl(result.path, 'card')}" style="max-width:100%; max-height:150px; border-radius:8px;">`;
                 showToast('Image uploaded');
             } catch (error) {
-                preview.innerHTML = `<p style="color: #dc2626;">Upload failed: ${error.message}</p>`;
+                preview.innerHTML = `<p style="color:#dc2626;">Upload failed: ${error.message}</p>`;
                 showToast('Upload failed', 'error');
             }
         }
-        
+
         async function deleteSubcategory(id) {
             if (!await confirmDialog('Delete this subcategory?')) return;
             try {

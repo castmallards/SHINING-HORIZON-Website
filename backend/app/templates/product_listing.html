@@ -1,157 +1,116 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ subcategory.name }} - Shining Horizon Trading</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <link rel="stylesheet" href="components/shared-styles.css">
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'primary': '#2d8bc9',
-                        'primary-dark': '#1a5a8a',
-                        'primary-light': '#5bb5e0',
-                        'accent': '#5bb5e0',
-                        'accent-light': '#8ed0f0',
-                    },
-                    fontFamily: { 'inter': ['Inter', 'sans-serif'] },
-                }
-            }
-        }
-    </script>
-    <style>
-        * { font-family: 'Inter', sans-serif; }
-        .product-card { transition: all 0.3s ease; }
-        .product-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(45, 139, 201, 0.15); }
-    </style>
-</head>
-<body class="bg-gray-50 pt-16">
-    <div id="header-placeholder"></div>
+{% extends "_base.html" %}
+{% from "_macros.html" import breadcrumb %}
 
-    <!-- Breadcrumb -->
-    <div class="bg-white border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <nav class="flex text-sm">
-                <a href="index.html" class="text-gray-500 hover:text-primary">Home</a>
-                <span class="mx-2 text-gray-400">/</span>
-                <a href="category-{{ category.slug }}.html" class="text-gray-500 hover:text-primary">{{ category.name }}</a>
-                <span class="mx-2 text-gray-400">/</span>
-                <span class="text-primary font-medium">{{ subcategory.name }}</span>
-            </nav>
+{% block page_title %}{{ meta_title or (subcategory.name ~ ' - Shining Horizon Trading') }}{% endblock %}
+
+{% block content %}
+{{ breadcrumb([
+    {'name': 'Home', 'url': '/'},
+    {'name': category.name, 'url': '/category/' ~ category.slug},
+    {'name': subcategory.name}
+]) }}
+
+<section class="bg-gradient-to-r from-primary to-primary-dark text-white py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid md:grid-cols-2 gap-10 items-center">
+            <div>
+                <h1 class="text-4xl md:text-5xl font-bold mb-4">{{ subcategory.name }}</h1>
+                <p class="text-white/90 text-lg mb-6">{{ subcategory.description or category.description or '' }}</p>
+                <div class="flex flex-wrap gap-3">
+                    <span class="bg-white/10 px-4 py-2 rounded-lg text-sm font-medium">Multiple Brands</span>
+                    <span class="bg-white/10 px-4 py-2 rounded-lg text-sm font-medium">All Configurations</span>
+                    <span class="bg-white/10 px-4 py-2 rounded-lg text-sm font-medium">Technical Support</span>
+                </div>
+            </div>
+            <div class="flex justify-center">
+                {% if subcategory.image %}
+                    <img src="{{ subcategory.image | variant('hero') }}" alt="{{ subcategory.name }}" loading="lazy" class="w-full max-w-md rounded-2xl shadow-2xl bg-white p-6">
+                {% elif products and products[0].product.image %}
+                    <img src="{{ products[0].product.image | variant('hero') }}" alt="{{ subcategory.name }}" loading="lazy" class="w-full max-w-md rounded-2xl shadow-2xl bg-white p-6">
+                {% endif %}
+            </div>
         </div>
     </div>
+</section>
 
-    <!-- Hero Section -->
-    <section class="bg-gradient-to-r from-primary to-primary-dark text-white py-16">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid md:grid-cols-2 gap-10 items-center">
-                <div>
-                    <h1 class="text-4xl md:text-5xl font-bold mb-4">{{ subcategory.name }}</h1>
-                    <p class="text-white/90 text-lg mb-6">{{ subcategory.description or category.description or '' }}</p>
-                    <div class="flex flex-wrap gap-3">
-                        <span class="bg-white/10 px-4 py-2 rounded-lg text-sm font-medium">Multiple Brands</span>
-                        <span class="bg-white/10 px-4 py-2 rounded-lg text-sm font-medium">All Configurations</span>
-                        <span class="bg-white/10 px-4 py-2 rounded-lg text-sm font-medium">Technical Support</span>
-                    </div>
-                </div>
-                <div class="flex justify-center">
-                    {% if subcategory.image %}
-                    <img src="{{ subcategory.image }}" alt="{{ subcategory.name }}" class="w-full max-w-md rounded-2xl shadow-2xl bg-white p-6">
-                    {% elif products and products[0].product.image %}
-                    <img src="{{ products[0].product.image }}" alt="{{ subcategory.name }}" class="w-full max-w-md rounded-2xl shadow-2xl bg-white p-6">
-                    {% endif %}
-                </div>
-            </div>
+<section class="py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-10">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">Available {{ subcategory.name }}</h2>
+            <p class="text-gray-600">Select from our range of products from different brands</p>
         </div>
-    </section>
 
-    <!-- Products Grid -->
-    <section class="py-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-10">
-                <h2 class="text-2xl font-bold text-gray-900 mb-2">Available {{ subcategory.name }}</h2>
-                <p class="text-gray-600">Select from our range of products from different brands</p>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {% for item in products %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for item in products %}
                 {% set product = item.product %}
                 {% set brand = item.brand %}
-                <div class="product-card bg-white rounded-xl shadow-md overflow-hidden border border-gray-100" data-aos="fade-up" data-aos-delay="{{ (loop.index0 % 3) * 50 }}">
-                    <div class="h-44 bg-gray-100 flex items-center justify-center p-4 rounded-t-xl">
-                        {% if product.image %}
-                        <img src="{{ product.image }}" alt="{{ product.name }}" class="max-h-full max-w-full object-contain">
-                        {% else %}
-                        <div class="w-full h-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center rounded-lg">
-                            <span class="text-primary text-2xl font-bold">{{ product.name[0] }}</span>
+                <article class="product-card bg-white rounded-xl shadow-md overflow-hidden border border-gray-100" data-aos="fade-up" data-aos-delay="{{ (loop.index0 % 3) * 50 }}">
+                    <a href="/product/{{ product.slug }}" class="block">
+                        <div class="h-44 bg-gray-100 flex items-center justify-center p-4 rounded-t-xl">
+                            {% if product.image %}
+                                <img src="{{ product.image | variant('card') }}" alt="{{ product.name }}" loading="lazy" class="max-h-full max-w-full object-contain">
+                            {% else %}
+                                <div class="w-full h-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center rounded-lg" aria-hidden="true">
+                                    <span class="text-primary text-2xl font-bold">{{ product.name[0] }}</span>
+                                </div>
+                            {% endif %}
                         </div>
-                        {% endif %}
-                    </div>
+                    </a>
                     <div class="p-5">
                         <div class="flex items-center justify-between mb-3">
                             <div>
                                 {% if product.part_number %}
-                                <p class="text-xs text-gray-500 mb-1">Part Number:</p>
-                                <p class="text-gray-900 font-semibold">{{ product.part_number }}</p>
+                                    <p class="text-xs text-gray-500 mb-1">Part Number:</p>
+                                    <p class="text-gray-900 font-semibold">{{ product.part_number }}</p>
                                 {% else %}
-                                <p class="text-gray-900 font-semibold">{{ product.name }}</p>
+                                    <p class="text-gray-900 font-semibold">
+                                        <a href="/product/{{ product.slug }}" class="hover:text-primary transition">{{ product.name }}</a>
+                                    </p>
                                 {% endif %}
                             </div>
                             {% if brand and brand.logo %}
-                            <img src="{{ brand.logo }}" alt="{{ brand.name }}" class="h-8 object-contain">
+                                <a href="/brand/{{ brand.slug }}" title="{{ brand.name }}">
+                                    <img src="{{ brand.logo | variant('thumb') }}" alt="{{ brand.name }} logo" loading="lazy" class="h-8 object-contain">
+                                </a>
                             {% elif brand %}
-                            <span class="text-sm text-gray-500 font-medium">{{ brand.name }}</span>
+                                <a href="/brand/{{ brand.slug }}" class="text-sm text-gray-500 font-medium hover:text-primary transition">{{ brand.name }}</a>
                             {% endif %}
                         </div>
-                        {% if product.description %}
-                        <div class="mb-4">
-                            <p class="text-xs text-gray-500 mb-1">Description:</p>
-                            <p class="text-gray-700 text-sm">{{ product.description }}</p>
-                        </div>
+                        {% set _desc = product.short_description or (product.description | striptags) %}
+                        {% if _desc %}
+                            <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ _desc }}</p>
                         {% endif %}
-                        <a href="quote.html?product={{ product.part_number or product.name | urlencode }}{% if brand %}&brand={{ brand.name | urlencode }}{% endif %}" class="block w-full bg-primary text-white text-center py-2.5 rounded-lg font-medium hover:bg-primary-dark transition">Request Quote</a>
+                        <div class="flex gap-2">
+                            <a href="/quote?product={{ (product.part_number or product.name) | urlencode }}{% if brand %}&brand={{ brand.name | urlencode }}{% endif %}" class="flex-1 bg-primary text-white text-center py-2.5 rounded-lg font-medium hover:bg-primary-dark transition text-sm">Request Quote</a>
+                            <a href="/product/{{ product.slug }}" title="View full details"
+                               class="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-gray-200 text-gray-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition flex-shrink-0">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </a>
+                        </div>
                     </div>
-                </div>
-                {% endfor %}
-            </div>
-            
-            {% if not products %}
+                </article>
+            {% endfor %}
+        </div>
+
+        {% if not products %}
             <div class="text-center py-12">
                 <p class="text-gray-500 text-lg">No products found in this category.</p>
-                <a href="quote.html?category={{ category.name | urlencode }}" class="inline-block mt-4 bg-primary text-white py-2 px-6 rounded-lg font-medium hover:bg-primary-dark transition">
+                <a href="/quote?category={{ category.name | urlencode }}" class="inline-block mt-4 bg-primary text-white py-2 px-6 rounded-lg font-medium hover:bg-primary-dark transition">
                     Request Custom Quote
                 </a>
             </div>
-            {% endif %}
-        </div>
-    </section>
+        {% endif %}
+    </div>
+</section>
 
-    <!-- CTA Section -->
-    <section class="bg-gradient-to-r from-primary to-primary-dark py-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 class="text-2xl font-bold text-white mb-3">Can't Find What You Need?</h2>
-            <p class="text-white/90 mb-6 max-w-xl mx-auto">We can source any model from our extensive supplier network. Contact us with your requirements.</p>
-            <div class="flex flex-wrap justify-center gap-4">
-                <a href="quote.html?product={{ subcategory.name | urlencode }}" class="bg-white text-primary font-semibold py-3 px-6 rounded-lg hover:bg-gray-100 transition">Request Custom Quote</a>
-                <a href="https://wa.me/966536598520" target="_blank" class="border-2 border-white text-white font-semibold py-3 px-6 rounded-lg hover:bg-white hover:text-primary transition">WhatsApp Us</a>
-            </div>
+<section class="bg-gradient-to-r from-primary to-primary-dark py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 class="text-2xl font-bold text-white mb-3">Can't Find What You Need?</h2>
+        <p class="text-white/90 mb-6 max-w-xl mx-auto">We can source any model from our extensive supplier network. Contact us with your requirements.</p>
+        <div class="flex flex-wrap justify-center gap-4">
+            <a href="/quote?product={{ subcategory.name | urlencode }}" class="bg-white text-primary font-semibold py-3 px-6 rounded-lg hover:bg-gray-100 transition">Request Custom Quote</a>
+            <a href="https://wa.me/966536598520" target="_blank" rel="noopener" class="border-2 border-white text-white font-semibold py-3 px-6 rounded-lg hover:bg-white hover:text-primary transition">WhatsApp Us</a>
         </div>
-    </section>
-
-    <div id="footer-placeholder"></div>
-    <script src="components/header.js?v=20241224"></script>
-    <script src="components/footer.js?v=20241224"></script>
-    
-    <script>
-        AOS.init({ duration: 600, easing: 'ease-out', once: true });
-    </script>
-</body>
-</html>
+    </div>
+</section>
+{% endblock %}

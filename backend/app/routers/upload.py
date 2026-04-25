@@ -1,78 +1,113 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
-from sqlalchemy.orm import Session
-import os
-import uuid
+"""Image upload endpoint (Phase 3.4).
 
-from ..database import get_db
+Delegates persistence + variant generation to ``services.image.process_upload``.
+The DB stores the returned ``base_path`` (extension-less, folder-prefixed);
+templates pick a size via the ``variant`` filter.
+"""
+from __future__ import annotations
+
+import glob
+import os
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+
 from ..config import settings
-from ..services.auth import get_current_user
 from ..models.user import User
+from ..services.auth import get_current_user
+from ..services.image import (
+    ALLOWED_EXTS,
+    VALID_FOLDERS,
+    ImageProcessingError,
+    process_upload,
+)
+
 
 router = APIRouter(prefix="/upload", tags=["Upload"])
 
-ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp", "svg"}
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB — keep aligned with services/image limits
 
-def allowed_file(filename: str) -> bool:
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @router.post("/image/{folder}")
 async def upload_image(
     folder: str,
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    # Validate folder
-    valid_folders = ["products", "categories", "brands", "subcategories"]
-    if folder not in valid_folders:
-        raise HTTPException(status_code=400, detail=f"Invalid folder. Must be one of: {valid_folders}")
-    
-    # Validate file extension
-    if not allowed_file(file.filename):
-        raise HTTPException(status_code=400, detail=f"Invalid file type. Allowed: {ALLOWED_EXTENSIONS}")
-    
-    # Read file content
+    if folder not in VALID_FOLDERS:
+        raise HTTPException(status_code=400, detail=f"Invalid folder. Must be one of: {list(VALID_FOLDERS)}")
+
+    if not file.filename or "." not in file.filename:
+        raise HTTPException(status_code=400, detail="Filename is missing an extension")
+
+    ext = file.filename.rsplit(".", 1)[-1].lower()
+    if ext not in ALLOWED_EXTS:
+        raise HTTPException(status_code=400, detail=f"Invalid file type. Allowed: {sorted(ALLOWED_EXTS)}")
+
     content = await file.read()
-    
-    # Validate file size
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="File too large. Max size: 5MB")
-    
-    # Generate unique filename
-    ext = file.filename.rsplit(".", 1)[1].lower()
-    unique_filename = f"{uuid.uuid4().hex}.{ext}"
-    
-    # Create upload directory if not exists
-    upload_dir = os.path.join(settings.UPLOAD_DIR, folder)
-    os.makedirs(upload_dir, exist_ok=True)
-    
-    # Save file
-    filepath = os.path.join(upload_dir, unique_filename)
-    with open(filepath, "wb") as f:
-        f.write(content)
-    
-    # Return relative path for database storage
-    relative_path = f"backend/uploads/{folder}/{unique_filename}"
-    
+    if not content:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+    try:
+        stored = process_upload(folder, file.filename, content)
+    except ImageProcessingError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    # The DB stores ``stored.base_path`` (e.g. "uploads/products/<id>"). Templates
+    # call ``image | variant('card')`` to pick the right WebP size.
     return {
-        "filename": unique_filename,
-        "path": relative_path,
-        "url": f"/uploads/{folder}/{unique_filename}"
+        "path": stored.base_path,
+        "url": stored.original_url,
+        "is_svg": stored.is_svg,
     }
+
 
 @router.delete("/image")
 async def delete_image(
     path: str,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    # Security check - only allow deleting from uploads folder
-    if not path.startswith("backend/uploads/"):
+    """Remove an image and any generated variants.
+
+    Accepts either a v2 base path (``uploads/{folder}/{id}``) or a legacy
+    full path (``backend/uploads/...``).
+    """
+    normalised = path.strip().removeprefix("/").removeprefix("backend/")
+
+    parts = normalised.split("/")
+    if len(parts) < 3 or parts[0] != "uploads" or parts[1] not in VALID_FOLDERS:
         raise HTTPException(status_code=400, detail="Invalid path")
-    
-    full_path = os.path.join(settings.BASE_DIR, path.replace("backend/", ""))
-    
-    if os.path.exists(full_path):
-        os.remove(full_path)
-        return {"message": "Image deleted successfully"}
-    else:
+
+    folder = parts[1]
+    folder_dir = os.path.join(settings.UPLOAD_DIR, folder)
+    asset = parts[-1]
+    image_id = asset.split(".", 1)[0]
+
+    removed: list[str] = []
+
+    # Variant WebPs
+    for variant_name in ("thumb", "card", "hero"):
+        candidate = os.path.join(folder_dir, variant_name, f"{image_id}.webp")
+        if os.path.exists(candidate):
+            os.remove(candidate)
+            removed.append(candidate)
+
+    # Original (raster lives under originals/, vector lives at the folder root)
+    for candidate in glob.glob(os.path.join(folder_dir, "originals", f"{image_id}.*")):
+        os.remove(candidate)
+        removed.append(candidate)
+    for candidate in glob.glob(os.path.join(folder_dir, f"{image_id}.*")):
+        os.remove(candidate)
+        removed.append(candidate)
+
+    # Legacy: pre-v2 records stored the file directly at uploads/{folder}/{filename}
+    if "." in asset:
+        legacy = os.path.join(folder_dir, asset)
+        if os.path.exists(legacy):
+            os.remove(legacy)
+            removed.append(legacy)
+
+    if not removed:
         raise HTTPException(status_code=404, detail="Image not found")
+    return {"message": "Image deleted successfully", "removed": len(removed)}

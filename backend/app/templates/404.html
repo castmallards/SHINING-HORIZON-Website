@@ -1,0 +1,30 @@
+{% extends "_base.html" %}
+
+{% block page_title %}Page not found — Shining Horizon Trading{% endblock %}
+
+{% block content %}
+<section class="bg-white py-24">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <p class="text-7xl font-bold text-primary mb-4">404</p>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">We couldn't find that page</h1>
+        <p class="text-gray-600 text-lg mb-8 max-w-xl mx-auto">
+            The link you followed may be broken, or the product/category may have moved.
+            Try one of the routes below or use search from the home page.
+        </p>
+        <div class="flex flex-wrap justify-center gap-3">
+            <a href="/" class="inline-flex items-center gap-2 bg-primary text-white font-semibold py-3 px-6 rounded-lg hover:bg-primary-dark transition">
+                Go to home
+            </a>
+            <a href="/categories" class="inline-flex items-center gap-2 border-2 border-primary text-primary font-semibold py-3 px-6 rounded-lg hover:bg-primary hover:text-white transition">
+                Browse categories
+            </a>
+            <a href="/brands" class="inline-flex items-center gap-2 border-2 border-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-lg hover:border-primary hover:text-primary transition">
+                Browse brands
+            </a>
+            <a href="/quote" class="inline-flex items-center gap-2 border-2 border-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-lg hover:border-primary hover:text-primary transition">
+                Request a quote
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}

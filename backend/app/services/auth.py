@@ -3,14 +3,15 @@ from typing import Optional
 from jose import JWTError, jwt
 import bcrypt
 from sqlalchemy.orm import Session
-from fastapi import HTTPException, status, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import HTTPException, Request, status, Depends
 
 from ..config import settings
 from ..models.user import User
 from ..database import get_db
 
-security = HTTPBearer()
+# Cookie name used by Phase 4.1 cookie-session auth. Kept here so routers and
+# middleware refer to a single source of truth.
+SESSION_COOKIE = "sh_session"
 
 class AuthService:
     @staticmethod
@@ -49,33 +50,53 @@ class AuthService:
             return None
         return user
 
+def _extract_token(request: Request) -> Optional[str]:
+    """Read a session token from the cookie first, falling back to Bearer.
+
+    The cookie is set by ``POST /api/auth/login`` on the live admin. The
+    Authorization fallback keeps existing API clients (curl, Swagger UI,
+    pre-Phase-4 admin builds) working during the transition.
+    """
+    token = request.cookies.get(SESSION_COOKIE)
+    if token:
+        return token
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.lower().startswith("bearer "):
+        return auth_header.split(" ", 1)[1].strip() or None
+    return None
+
+
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    request: Request,
+    db: Session = Depends(get_db),
 ) -> User:
-    token = credentials.credentials
+    token = _extract_token(request)
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
+
     payload = AuthService.decode_token(token)
-    
     if not payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token"
+            detail="Invalid or expired token",
         )
-    
+
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token payload"
+            detail="Invalid token payload",
         )
-    
+
     user = db.query(User).filter(User.id == int(user_id)).first()
     if not user or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found or inactive"
+            detail="User not found or inactive",
         )
-    
     return user
 
 def require_super_admin(current_user: User = Depends(get_current_user)) -> User:

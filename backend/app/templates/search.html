@@ -1,0 +1,90 @@
+{% extends "_base.html" %}
+{% from "_macros.html" import breadcrumb, card_carousel %}
+
+{% block page_title %}{{ meta_title or 'Search Products — Shining Horizon Trading' }}{% endblock %}
+
+{% block content %}
+{{ breadcrumb([
+    {'name': 'Home', 'url': '/'},
+    {'name': 'Search'}
+]) }}
+
+<section class="bg-gradient-to-r from-primary to-primary-dark text-white py-16">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h1 class="text-3xl md:text-4xl font-bold mb-3">Search our catalog</h1>
+        <p class="text-white/80 mb-8 text-sm md:text-base">Search by product name, brand, part number or description.</p>
+
+        <form action="/search" method="get" role="search" class="flex flex-wrap items-stretch gap-2 max-w-2xl mx-auto">
+            <div class="flex-1 min-w-0 relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </span>
+                <input type="search" name="q" required minlength="1" autofocus
+                       value="{{ query or '' }}"
+                       placeholder="e.g. PLC, Siemens, ACS580, hard hat..."
+                       class="w-full pl-12 pr-4 py-3.5 rounded-xl text-gray-900 placeholder-gray-400 border-0 focus:outline-none focus:ring-2 focus:ring-white/40">
+            </div>
+            <button type="submit" class="bg-white text-primary font-semibold py-3.5 px-6 rounded-xl hover:bg-gray-100 transition">
+                Search
+            </button>
+        </form>
+    </div>
+</section>
+
+<section class="py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {% if not query %}
+            <div class="text-center py-16">
+                <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <p class="text-gray-500">Type a query above to search the catalog.</p>
+            </div>
+        {% elif total == 0 %}
+            <div class="text-center py-16">
+                <p class="text-2xl font-bold text-gray-900 mb-2">No results for "{{ query }}"</p>
+                <p class="text-gray-500 mb-6">Try a different keyword, brand name or part number.</p>
+                <div class="flex flex-wrap justify-center gap-3">
+                    <a href="/categories" class="bg-primary text-white font-semibold py-3 px-6 rounded-lg hover:bg-primary-dark transition">Browse Categories</a>
+                    <a href="/brands" class="border-2 border-primary text-primary font-semibold py-3 px-6 rounded-lg hover:bg-primary hover:text-white transition">Browse Brands</a>
+                    <a href="/quote?product={{ query | urlencode }}" class="border-2 border-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-lg hover:border-primary hover:text-primary transition">Request Quote</a>
+                </div>
+            </div>
+        {% else %}
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900">{{ total }} result{{ '' if total == 1 else 's' }} for "{{ query }}"</h2>
+                    <p class="text-gray-500 text-sm mt-1">Showing the most relevant matches first.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                {% for p in results %}
+                <a href="/product/{{ p.slug }}"
+                   class="product-card bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col group focus:outline-none focus:ring-2 focus:ring-primary/40">
+                    {{ card_carousel(p) }}
+                    <div class="p-4 flex-1 flex flex-col">
+                        {% if p.brand_name %}
+                            <p class="text-xs font-semibold text-primary uppercase tracking-wider mb-1">{{ p.brand_name }}</p>
+                        {% endif %}
+                        <h3 class="text-sm font-bold text-gray-900 leading-snug mb-2 line-clamp-2">{{ p.name }}</h3>
+                        {% if p.short_description %}
+                            <p class="text-xs text-gray-500 line-clamp-2 mb-3">{{ p.short_description }}</p>
+                        {% endif %}
+                        <div class="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between">
+                            {% if p.part_number %}
+                                <span class="text-[10px] font-mono text-gray-500 truncate" title="{{ p.part_number }}">{{ p.part_number }}</span>
+                            {% else %}
+                                <span class="text-[10px] text-gray-400 truncate">{{ p.category_name or '' }}</span>
+                            {% endif %}
+                            <span class="text-xs font-semibold text-primary group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                                View
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                            </span>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

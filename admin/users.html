@@ -5,28 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Users - Shining Horizon Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="/static/logo/Shinning_Horizon_logo.png" type="image/png">
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
-    <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="sidebar-header"><div class="sidebar-logo">Shining <span>Horizon</span></div></div>
+    <aside class="sidebar" id="admin-sidebar">
+        <div class="sidebar-header">
+            <a href="index.html"><img src="/static/logo/Shinning_Horizon_logo.png" alt="Shining Horizon" class="sidebar-logo-img"></a>
+            <button class="sidebar-close-btn" onclick="toggleSidebar()" aria-label="Collapse sidebar" title="Collapse sidebar">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
+            </button>
+        </div>
         <nav class="sidebar-nav">
-            <a href="index.html" class="nav-item"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>Dashboard</a>
+            <a href="index.html" class="nav-item">Dashboard</a>
             <div class="nav-section">Catalog</div>
-            <a href="categories.html" class="nav-item"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>Categories</a>
-            <a href="subcategories.html" class="nav-item"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>Subcategories</a>
-            <a href="products.html" class="nav-item"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>Products</a>
-            <a href="brands.html" class="nav-item"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>Brands</a>
+            <a href="categories.html" class="nav-item">Categories</a>
+            <a href="subcategories.html" class="nav-item">Subcategories</a>
+            <a href="products.html" class="nav-item">Products</a>
+            <a href="brands.html" class="nav-item">Brands</a>
+            <a href="import.html" class="nav-item" data-permission="delete">Import Data</a>
             <div class="nav-section">System</div>
-            <a href="users.html" class="nav-item active"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>Users</a>
-            <a href="#" class="nav-item" onclick="authAPI.logout()"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>Logout</a>
+            <a href="users.html" class="nav-item active" data-permission="users">Users</a>
+            <a href="audit.html" class="nav-item" data-permission="audit">Audit Log</a>
+            <a href="#" class="nav-item" onclick="event.preventDefault(); authAPI.logout()">Logout</a>
         </nav>
     </aside>
     
     <main class="main-content">
         <header class="header">
-            <div class="header-left"><h1 class="header-title">Users</h1></div>
+            <div class="header-left">                <h1 class="header-title">Users</h1>
+            </div>
             <div class="header-right">
                 <div class="user-menu">
                     <div class="user-avatar">A</div>
@@ -110,9 +118,14 @@
                     <div class="form-group">
                         <label class="form-label">Role *</label>
                         <select name="role" class="form-select" required>
-                            <option value="admin">Admin</option>
-                            <option value="super_admin">Super Admin</option>
+                            <option value="data_entry">Data Entry — drafts only, no publish/delete</option>
+                            <option value="manager">Manager — publish/unpublish, no delete</option>
+                            <option value="admin">Admin — full content CRUD + audit log</option>
+                            <option value="super_admin">Super Admin — everything, manages users</option>
                         </select>
+                        <small style="color:#64748b; display:block; margin-top:4px;">
+                            Roles control what this user can do. The backend enforces these — pick the lowest level that lets them do their job.
+                        </small>
                     </div>
                     
                     <div class="form-group">
@@ -129,16 +142,18 @@
     
     <div id="toast-container" class="toast-container"></div>
     
+    <script src="assets/js/auth.js"></script>
     <script src="assets/js/api.js"></script>
     <script src="assets/js/utils.js"></script>
     <script>
         if (!requireAuth()) {}
-        
+
         let users = [];
         let currentUser = null;
-        
+
         document.addEventListener('DOMContentLoaded', async () => {
             initUserInfo();
+            applyRoleGates();
             currentUser = getCurrentUser();
             
             // Check if super admin
@@ -152,6 +167,16 @@
             await loadUsers();
         });
         
+        function roleBadgeClass(role) {
+            switch (role) {
+                case 'super_admin': return 'badge-info';
+                case 'admin': return 'badge-warning';
+                case 'manager': return 'badge-success';
+                case 'data_entry': return 'badge-secondary';
+                default: return 'badge-secondary';
+            }
+        }
+
         async function loadUsers() {
             try {
                 users = await usersAPI.getAll();
@@ -186,7 +211,7 @@
                         </div>
                     </td>
                     <td>${escapeHtml(u.email)}</td>
-                    <td><span class="badge ${u.role === 'super_admin' ? 'badge-info' : 'badge-warning'}">${u.role === 'super_admin' ? 'Super Admin' : 'Admin'}</span></td>
+                    <td><span class="badge ${roleBadgeClass(u.role)}">${roleLabel(u.role)}</span></td>
                     <td><span class="badge ${u.is_active ? 'badge-success' : 'badge-danger'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
                     <td>${formatDate(u.created_at)}</td>
                     <td>

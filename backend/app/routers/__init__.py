@@ -5,5 +5,6 @@ from .subcategories import router as subcategories_router
 from .brands import router as brands_router
 from .products import router as products_router
 from .upload import router as upload_router
-from .generator import router as generator_router
 from .import_data import router as import_router
+from .public import router as public_router
+from .audit import router as audit_router
