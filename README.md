@@ -9,17 +9,6 @@
 
 ---
 
-## 🌐 Live System
-
-**Production URLs:**
-- **Public Website**: http://46.62.254.185:3004/
-- **Admin Dashboard**: http://46.62.254.185:3004/admin/login.html
-- **API Documentation**: http://46.62.254.185:8000/docs
-
-⚠️ **Change default password after first login!**
-
----
-
 ## 📋 Table of Contents
 
 - [Overview](#overview)
