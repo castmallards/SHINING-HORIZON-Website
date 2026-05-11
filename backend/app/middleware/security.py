@@ -25,12 +25,13 @@ from starlette.responses import Response
 
 _DEFAULT_CSP = "; ".join([
     "default-src 'self'",
-    # Tailwind CDN (cdn.tailwindcss.com), AOS (unpkg.com), Quill (cdn.quilljs.com).
+    # Tailwind CDN (cdn.tailwindcss.com), AOS (unpkg.com), Quill (cdn.quilljs.com),
+    # Swiper (cdn.jsdelivr.net), Typed.js (cdn.jsdelivr.net), Three.js (cdnjs.cloudflare.com).
     # 'unsafe-inline' is required for the inline <script> tailwind config block
     # in _head.html and inline event handlers throughout the admin pages.
-    "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://cdn.quilljs.com",
+    "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://cdn.quilljs.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
     # 'unsafe-inline' for inline <style> blocks in _head.html and admin pages.
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.quilljs.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.quilljs.com https://cdn.jsdelivr.net",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: https: blob:",
     "connect-src 'self'",
