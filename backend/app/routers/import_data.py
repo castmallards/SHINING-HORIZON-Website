@@ -10,7 +10,8 @@ from ..models.user import User
 from ..models.category import Category, CategoryType
 from ..models.subcategory import Subcategory
 from ..models.brand import Brand
-from ..models.product import Product
+from ..services.product import ProductService
+from ..cache import invalidate_public
 import re
 
 router = APIRouter(prefix="/import", tags=["Import"])
@@ -222,6 +223,9 @@ async def import_products(
     """
     Import products from CSV.
     Columns: category_name, subcategory_name, brand_name, name, part_number, short_description, description, display_order
+
+    Rows with a part_number update the existing product with that part number (upsert).
+    Rows without a part_number match by slug + category + name, or create a new row.
     """
     if not file.filename.endswith('.csv'):
         raise HTTPException(status_code=400, detail="File must be CSV")
@@ -269,47 +273,27 @@ async def import_products(
                 if brand:
                     brand_id = brand.id
             
-            part_number = row.get('part_number', '').strip()
-            slug = generate_slug(part_number if part_number else name)
-            
-            # Make slug unique
-            existing_slug = db.query(Product).filter(Product.slug == slug).first()
-            if existing_slug:
-                # Check if same product (update) or different (make unique)
-                if existing_slug.category_id == category.id and existing_slug.name == name:
-                    # Update existing
-                    existing_slug.subcategory_id = subcategory_id
-                    existing_slug.brand_id = brand_id
-                    existing_slug.part_number = part_number
-                    existing_slug.short_description = row.get('short_description', '').strip() or existing_slug.short_description
-                    existing_slug.description = row.get('description', '').strip() or existing_slug.description
-                    existing_slug.display_order = int(row.get('display_order', 0) or 0)
-                    updated += 1
-                    continue
-                else:
-                    # Make unique slug
-                    count = 1
-                    while db.query(Product).filter(Product.slug == f"{slug}-{count}").first():
-                        count += 1
-                    slug = f"{slug}-{count}"
-            
-            product = Product(
-                name=name,
-                slug=slug,
+            outcome = ProductService.upsert_from_import(
+                db,
                 category_id=category.id,
                 subcategory_id=subcategory_id,
                 brand_id=brand_id,
-                part_number=part_number,
+                name=name,
+                part_number_raw=row.get('part_number', ''),
                 short_description=row.get('short_description', '').strip(),
                 description=row.get('description', '').strip(),
                 display_order=int(row.get('display_order', 0) or 0),
-                is_active=True
             )
-            db.add(product)
-            created += 1
-                
+            if outcome == "created":
+                created += 1
+            else:
+                updated += 1
+            db.flush()
+
         except Exception as e:
             errors.append(f"Row {row_num}: {str(e)}")
-    
+
     db.commit()
+    if created or updated:
+        invalidate_public()
     return {"created": created, "updated": updated, "errors": errors}

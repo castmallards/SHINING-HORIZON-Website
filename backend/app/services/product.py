@@ -97,7 +97,113 @@ class ProductService:
     @staticmethod
     def get_by_slug(db: Session, slug: str) -> Optional[Product]:
         return db.query(Product).filter(Product.slug == slug).first()
-    
+
+    @staticmethod
+    def resolve_unique_slug(
+        db: Session,
+        name: str,
+        part_number: Optional[str] = None,
+        *,
+        exclude_id: Optional[int] = None,
+    ) -> str:
+        """Pick a URL slug; append -1, -2, … only if another product owns the base slug."""
+        base = ProductService.generate_slug(name, part_number)
+        existing = ProductService.get_by_slug(db, base)
+        if not existing or (exclude_id is not None and existing.id == exclude_id):
+            return base
+        count = 1
+        while True:
+            candidate = f"{base}-{count}"
+            existing = ProductService.get_by_slug(db, candidate)
+            if not existing or (exclude_id is not None and existing.id == exclude_id):
+                return candidate
+            count += 1
+
+    @staticmethod
+    def upsert_from_import(
+        db: Session,
+        *,
+        category_id: int,
+        subcategory_id: Optional[int],
+        brand_id: Optional[int],
+        name: str,
+        part_number_raw: Optional[str],
+        short_description: str,
+        description: str,
+        display_order: int,
+    ) -> str:
+        """Create or update a product from a CSV import row. Returns ``created`` or ``updated``."""
+        part_number = ProductService.normalize_part_number(part_number_raw)
+
+        if part_number:
+            existing = ProductService.get_by_part_number(db, part_number)
+            if existing:
+                existing.name = name
+                existing.category_id = category_id
+                existing.subcategory_id = subcategory_id
+                existing.brand_id = brand_id
+                existing.part_number = part_number
+                if short_description:
+                    existing.short_description = short_description
+                if description:
+                    existing.description = description
+                existing.display_order = display_order
+                existing.slug = ProductService.resolve_unique_slug(
+                    db, name, part_number, exclude_id=existing.id
+                )
+                return "updated"
+
+            slug = ProductService.resolve_unique_slug(db, name, part_number)
+            db.add(
+                Product(
+                    name=name,
+                    slug=slug,
+                    category_id=category_id,
+                    subcategory_id=subcategory_id,
+                    brand_id=brand_id,
+                    part_number=part_number,
+                    short_description=short_description,
+                    description=description,
+                    display_order=display_order,
+                    is_active=True,
+                )
+            )
+            return "created"
+
+        # No part number: match by base slug + category + name (legacy import behaviour).
+        base_slug = ProductService.generate_slug(name, None)
+        existing = ProductService.get_by_slug(db, base_slug)
+        if (
+            existing
+            and existing.category_id == category_id
+            and existing.name == name
+        ):
+            existing.subcategory_id = subcategory_id
+            existing.brand_id = brand_id
+            if short_description:
+                existing.short_description = short_description
+            if description:
+                existing.description = description
+            existing.display_order = display_order
+            return "updated"
+
+        slug = ProductService.resolve_unique_slug(db, name, None)
+        db.add(
+            Product(
+                name=name,
+                slug=slug,
+                category_id=category_id,
+                subcategory_id=subcategory_id,
+                brand_id=brand_id,
+                part_number=None,
+                short_description=short_description,
+                description=description,
+                display_order=display_order,
+                is_active=True,
+            )
+        )
+        return "created"
+
     @staticmethod
     def create(
         db: Session,
