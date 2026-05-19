@@ -109,6 +109,13 @@ const productsAPI = {
     delete: (id) => apiRequest(`/products/${id}`, { method: 'DELETE' }),
     bulk: (ids, action) => apiRequest('/products/bulk', { method: 'POST', body: JSON.stringify({ ids, action }) }),
     validation: () => apiRequest('/products/validation'),
+    checkPartNumber: (partNumber, excludeId = null) =>
+        apiRequest(
+            `/products/check-part-number${buildQuery({
+                part_number: partNumber,
+                exclude_id: excludeId,
+            })}`
+        ),
 };
 
 const usersAPI = {

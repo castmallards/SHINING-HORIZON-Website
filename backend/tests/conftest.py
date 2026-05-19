@@ -1,3 +1,10 @@
+import os
+
+# Settings() runs at import time (via app.main). CI writes backend/.env from
+# .env.example; locally pytest may run without .env — set a valid key first.
+os.environ["SECRET_KEY"] = "test-secret-key-at-least-32-characters-long"
+os.environ["LOGIN_RATE_LIMIT"] = "1000/minute"
+
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
@@ -43,3 +50,21 @@ def client():
 
     with TestClient(app) as client:
         yield client
+
+
+def csrf_headers(client: TestClient) -> dict[str, str]:
+    """Headers required for POST/PUT/PATCH/DELETE on /api/* (see CSRFMiddleware)."""
+    token = client.cookies.get("csrf_token")
+    assert token, "CSRF cookie missing — log in before mutating requests"
+    return {"X-CSRF-Token": token}
+
+
+@pytest.fixture
+def auth_client(client):
+    """API client with an authenticated super-admin session."""
+    login = client.post(
+        "/api/auth/login",
+        json={"username": TEST_ADMIN_USERNAME, "password": TEST_ADMIN_PASSWORD},
+    )
+    assert login.status_code == 200
+    return client

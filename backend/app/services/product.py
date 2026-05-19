@@ -16,6 +16,50 @@ _AUDIT_FIELDS = ("name", "slug", "part_number", "category_id", "subcategory_id",
 
 class ProductService:
     @staticmethod
+    def normalize_part_number(part_number: Optional[str]) -> Optional[str]:
+        """Strip whitespace; empty strings become None (no part number)."""
+        if part_number is None:
+            return None
+        stripped = part_number.strip()
+        return stripped if stripped else None
+
+    @staticmethod
+    def get_by_part_number(
+        db: Session,
+        part_number: str,
+        *,
+        exclude_id: Optional[int] = None,
+    ) -> Optional[Product]:
+        normalized = ProductService.normalize_part_number(part_number)
+        if not normalized:
+            return None
+        query = db.query(Product).filter(Product.part_number == normalized)
+        if exclude_id is not None:
+            query = query.filter(Product.id != exclude_id)
+        return query.first()
+
+    @staticmethod
+    def ensure_part_number_available(
+        db: Session,
+        part_number: Optional[str],
+        *,
+        exclude_id: Optional[int] = None,
+    ) -> Optional[str]:
+        """Return normalized part number, or raise 409 if another product already uses it."""
+        normalized = ProductService.normalize_part_number(part_number)
+        if not normalized:
+            return None
+        existing = ProductService.get_by_part_number(
+            db, normalized, exclude_id=exclude_id
+        )
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"A product with part number '{normalized}' already exists.",
+            )
+        return normalized
+
+    @staticmethod
     def generate_slug(name: str, part_number: Optional[str] = None) -> str:
         base = part_number if part_number else name
         slug = base.lower().strip()
@@ -76,7 +120,11 @@ class ProductService:
             if not brand:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Brand not found")
 
-        slug = ProductService.generate_slug(product_data.name, product_data.part_number)
+        part_number = ProductService.ensure_part_number_available(
+            db, product_data.part_number
+        )
+
+        slug = ProductService.generate_slug(product_data.name, part_number)
         existing = ProductService.get_by_slug(db, slug)
         if existing:
             count = 1
@@ -90,7 +138,7 @@ class ProductService:
             category_id=product_data.category_id,
             subcategory_id=product_data.subcategory_id,
             brand_id=product_data.brand_id,
-            part_number=product_data.part_number,
+            part_number=part_number,
             description=product_data.description,
             short_description=product_data.short_description,
             image=product_data.image,
@@ -142,6 +190,13 @@ class ProductService:
         update_data = product_data.model_dump(exclude_unset=True)
         spec_value = update_data.pop("specifications", None)
         gallery_value = update_data.pop("gallery", None)
+
+        if "part_number" in update_data:
+            update_data["part_number"] = ProductService.ensure_part_number_available(
+                db,
+                update_data["part_number"],
+                exclude_id=product_id,
+            )
 
         if "name" in update_data or "part_number" in update_data:
             name = update_data.get("name", product.name)
