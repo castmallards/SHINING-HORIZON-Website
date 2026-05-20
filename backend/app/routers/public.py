@@ -119,6 +119,20 @@ def _card_dict(p: Product) -> dict:
     }
 
 
+def _home_categories(db: Session) -> list[Category]:
+
+    def _load():
+        return (
+            _published(db.query(Category), Category)
+            .filter(Category.show_on_home == True)
+            .order_by(Category.display_order, Category.name)
+            .all()
+        )
+    
+    return cache.get_or_set("public:categories:home", _load)
+    
+
+
 # ─── Router ───────────────────────────────────────────────────────────
 
 router = APIRouter(tags=["Public"])
@@ -127,6 +141,8 @@ router = APIRouter(tags=["Public"])
 @router.get("/", response_class=HTMLResponse)
 def home(request: Request, db: Session = Depends(get_db)):
     footer_categories = _footer_categories(db)
+    home_categories = _home_categories(db)
+    home_brands = _published_brands(db)
 
     # Featured products — surfaced in the "Featured Products" home section.
     # Prefers is_featured=True; falls back to most-recent published if fewer than 8.
@@ -147,6 +163,8 @@ def home(request: Request, db: Session = Depends(get_db)):
             request,
             is_home=True,
             footer_categories=footer_categories,
+            home_categories=home_categories,
+            home_brands=home_brands,
             featured_products=featured_products,
             meta_description="Shining Horizon Trading — industrial automation, electrical, lifting, pneumatic, safety and tools across Saudi Arabia.",
             jsonld_blocks=[seo.organization(str(request.base_url))],

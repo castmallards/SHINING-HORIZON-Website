@@ -16,7 +16,7 @@ class Product(Base):
 
     name = Column(String(200), nullable=False)
     slug = Column(String(200), index=True, nullable=False)
-    part_number = Column(String(100))
+    part_number = Column(String(100), unique=True, nullable=True)
     description = Column(Text)
     short_description = Column(String(500))
     image = Column(String(255))

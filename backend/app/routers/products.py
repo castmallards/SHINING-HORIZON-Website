@@ -89,6 +89,46 @@ def bulk_action(
     return {"action": payload.action, "affected": affected, "requested": len(payload.ids)}
 
 
+@router.get("/check-part-number")
+def check_part_number(
+    part_number: str = Query(..., min_length=1, description="Part number to validate"),
+    exclude_id: Optional[int] = Query(
+        None,
+        description="Product id to exclude (when editing an existing product)",
+    ),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Return whether a part number is available (for admin blur validation)."""
+    normalized = ProductService.normalize_part_number(part_number)
+    if not normalized:
+        return {
+            "available": True,
+            "part_number": None,
+            "existing": None,
+        }
+
+    existing = ProductService.get_by_part_number(
+        db, normalized, exclude_id=exclude_id
+    )
+    if not existing:
+        return {
+            "available": True,
+            "part_number": normalized,
+            "existing": None,
+        }
+
+    return {
+        "available": False,
+        "part_number": normalized,
+        "existing": {
+            "id": existing.id,
+            "name": existing.name,
+            "slug": existing.slug,
+        },
+    }
+
+
 @router.get("/validation")
 def validate_catalog(
     db: Session = Depends(get_db),

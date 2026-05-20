@@ -16,6 +16,50 @@ _AUDIT_FIELDS = ("name", "slug", "part_number", "category_id", "subcategory_id",
 
 class ProductService:
     @staticmethod
+    def normalize_part_number(part_number: Optional[str]) -> Optional[str]:
+        """Strip whitespace; empty strings become None (no part number)."""
+        if part_number is None:
+            return None
+        stripped = part_number.strip()
+        return stripped if stripped else None
+
+    @staticmethod
+    def get_by_part_number(
+        db: Session,
+        part_number: str,
+        *,
+        exclude_id: Optional[int] = None,
+    ) -> Optional[Product]:
+        normalized = ProductService.normalize_part_number(part_number)
+        if not normalized:
+            return None
+        query = db.query(Product).filter(Product.part_number == normalized)
+        if exclude_id is not None:
+            query = query.filter(Product.id != exclude_id)
+        return query.first()
+
+    @staticmethod
+    def ensure_part_number_available(
+        db: Session,
+        part_number: Optional[str],
+        *,
+        exclude_id: Optional[int] = None,
+    ) -> Optional[str]:
+        """Return normalized part number, or raise 409 if another product already uses it."""
+        normalized = ProductService.normalize_part_number(part_number)
+        if not normalized:
+            return None
+        existing = ProductService.get_by_part_number(
+            db, normalized, exclude_id=exclude_id
+        )
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"A product with part number '{normalized}' already exists.",
+            )
+        return normalized
+
+    @staticmethod
     def generate_slug(name: str, part_number: Optional[str] = None) -> str:
         base = part_number if part_number else name
         slug = base.lower().strip()
@@ -53,7 +97,113 @@ class ProductService:
     @staticmethod
     def get_by_slug(db: Session, slug: str) -> Optional[Product]:
         return db.query(Product).filter(Product.slug == slug).first()
-    
+
+    @staticmethod
+    def resolve_unique_slug(
+        db: Session,
+        name: str,
+        part_number: Optional[str] = None,
+        *,
+        exclude_id: Optional[int] = None,
+    ) -> str:
+        """Pick a URL slug; append -1, -2, … only if another product owns the base slug."""
+        base = ProductService.generate_slug(name, part_number)
+        existing = ProductService.get_by_slug(db, base)
+        if not existing or (exclude_id is not None and existing.id == exclude_id):
+            return base
+        count = 1
+        while True:
+            candidate = f"{base}-{count}"
+            existing = ProductService.get_by_slug(db, candidate)
+            if not existing or (exclude_id is not None and existing.id == exclude_id):
+                return candidate
+            count += 1
+
+    @staticmethod
+    def upsert_from_import(
+        db: Session,
+        *,
+        category_id: int,
+        subcategory_id: Optional[int],
+        brand_id: Optional[int],
+        name: str,
+        part_number_raw: Optional[str],
+        short_description: str,
+        description: str,
+        display_order: int,
+    ) -> str:
+        """Create or update a product from a CSV import row. Returns ``created`` or ``updated``."""
+        part_number = ProductService.normalize_part_number(part_number_raw)
+
+        if part_number:
+            existing = ProductService.get_by_part_number(db, part_number)
+            if existing:
+                existing.name = name
+                existing.category_id = category_id
+                existing.subcategory_id = subcategory_id
+                existing.brand_id = brand_id
+                existing.part_number = part_number
+                if short_description:
+                    existing.short_description = short_description
+                if description:
+                    existing.description = description
+                existing.display_order = display_order
+                existing.slug = ProductService.resolve_unique_slug(
+                    db, name, part_number, exclude_id=existing.id
+                )
+                return "updated"
+
+            slug = ProductService.resolve_unique_slug(db, name, part_number)
+            db.add(
+                Product(
+                    name=name,
+                    slug=slug,
+                    category_id=category_id,
+                    subcategory_id=subcategory_id,
+                    brand_id=brand_id,
+                    part_number=part_number,
+                    short_description=short_description,
+                    description=description,
+                    display_order=display_order,
+                    is_active=True,
+                )
+            )
+            return "created"
+
+        # No part number: match by base slug + category + name (legacy import behaviour).
+        base_slug = ProductService.generate_slug(name, None)
+        existing = ProductService.get_by_slug(db, base_slug)
+        if (
+            existing
+            and existing.category_id == category_id
+            and existing.name == name
+        ):
+            existing.subcategory_id = subcategory_id
+            existing.brand_id = brand_id
+            if short_description:
+                existing.short_description = short_description
+            if description:
+                existing.description = description
+            existing.display_order = display_order
+            return "updated"
+
+        slug = ProductService.resolve_unique_slug(db, name, None)
+        db.add(
+            Product(
+                name=name,
+                slug=slug,
+                category_id=category_id,
+                subcategory_id=subcategory_id,
+                brand_id=brand_id,
+                part_number=None,
+                short_description=short_description,
+                description=description,
+                display_order=display_order,
+                is_active=True,
+            )
+        )
+        return "created"
+
     @staticmethod
     def create(
         db: Session,
@@ -76,7 +226,11 @@ class ProductService:
             if not brand:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Brand not found")
 
-        slug = ProductService.generate_slug(product_data.name, product_data.part_number)
+        part_number = ProductService.ensure_part_number_available(
+            db, product_data.part_number
+        )
+
+        slug = ProductService.generate_slug(product_data.name, part_number)
         existing = ProductService.get_by_slug(db, slug)
         if existing:
             count = 1
@@ -90,7 +244,7 @@ class ProductService:
             category_id=product_data.category_id,
             subcategory_id=product_data.subcategory_id,
             brand_id=product_data.brand_id,
-            part_number=product_data.part_number,
+            part_number=part_number,
             description=product_data.description,
             short_description=product_data.short_description,
             image=product_data.image,
@@ -142,6 +296,13 @@ class ProductService:
         update_data = product_data.model_dump(exclude_unset=True)
         spec_value = update_data.pop("specifications", None)
         gallery_value = update_data.pop("gallery", None)
+
+        if "part_number" in update_data:
+            update_data["part_number"] = ProductService.ensure_part_number_available(
+                db,
+                update_data["part_number"],
+                exclude_id=product_id,
+            )
 
         if "name" in update_data or "part_number" in update_data:
             name = update_data.get("name", product.name)
