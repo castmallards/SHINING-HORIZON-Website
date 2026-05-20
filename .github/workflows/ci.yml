@@ -48,8 +48,7 @@ jobs:
           p.write_text(text)
           PY
 
-       - name: Run tests
-        working-directory: backend
+      - name: Run tests
         env:
           PYTHONPATH: .
         run: python -m pytest -q
