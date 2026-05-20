@@ -56,10 +56,42 @@
     .why-icon { transition: all 0.6s ease; }
     .promo-banner { transition: all 0.4s ease; }
     .promo-banner:hover { transform: translateY(-5px); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25); }
-    .brands-scroll-container { width: 100%; overflow: hidden; }
-    .brands-scroll { display: flex; align-items: center; animation: scrollBrands 30s linear infinite; width: max-content; }
+    /* Brands marquee: content moves left → logos enter from the right, exit left */
+    .brands-scroll-container {
+        width: 100%;
+        overflow: hidden;
+        position: relative;
+    }
+    .brands-scroll-container::before,
+    .brands-scroll-container::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        width: 120px;
+        height: 100%;
+        z-index: 2;
+        pointer-events: none;
+    }
+    .brands-scroll-container::before {
+        left: 0;
+        background: linear-gradient(to right, rgb(249, 250, 251), transparent);
+    }
+    .brands-scroll-container::after {
+        right: 0;
+        background: linear-gradient(to left, rgb(249, 250, 251), transparent);
+    }
+    .brands-scroll {
+        display: flex;
+        align-items: center;
+        width: max-content;
+        flex-shrink: 0;
+        animation: scrollBrands 30s linear infinite;
+    }
     .brands-scroll:hover { animation-play-state: paused; }
-    @keyframes scrollBrands { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    @keyframes scrollBrands {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+    }
     .client-scroll-container { width: 100%; overflow: hidden; position: relative; }
     .client-scroll-container::before, .client-scroll-container::after { content: ''; position: absolute; top: 0; width: 150px; height: 100%; z-index: 2; pointer-events: none; }
     .client-scroll-container::before { left: 0; background: linear-gradient(to right, rgb(249, 250, 251), transparent); }
@@ -353,34 +385,34 @@
             <p class="text-gray-600 max-w-2xl mx-auto">One-stop destination for industrial automation, electrical, tools, safety, HVAC, plumbing, and more. Click any category to explore.</p>
         </div>
 
-        {# Curated home page categories. Each entry uses a hand-picked image from /static/categories/. #}
-        {# Slugs match the seeded category slugs in the DB so links resolve to /category/{slug}. #}
-        {% set home_categories = [
-            { 'slug': 'industrial-automation', 'name': 'Industrial Automation', 'tagline': 'PLCs, VFDs, HMIs & More', 'image': 'industrial automation.png' },
-            { 'slug': 'electrical-products', 'name': 'Electrical Products', 'tagline': 'Cables, Breakers & More', 'image': 'electrical products.jpg' },
-            { 'slug': 'lifting-equipment', 'name': 'Lifting Equipment', 'tagline': 'Chain Hoists, Wire Ropes & More', 'image': 'lifting-equipment.jpg' },
-            { 'slug': 'pneumatic-products', 'name': 'Pneumatic Products', 'tagline': 'Cylinders, Valves & More', 'image': 'pneumatic products.png' },
-            { 'slug': 'plumbing-products', 'name': 'Plumbing Products', 'tagline': 'Valves, Pipes & Fittings', 'image': 'plumbing products.webp' },
-            { 'slug': 'lighting-products', 'name': 'Lighting Products', 'tagline': 'LED & Industrial Lighting', 'image': 'lighting products.jpg' },
-            { 'slug': 'safety-products', 'name': 'Safety Products', 'tagline': 'PPE & Fire Safety', 'image': 'safety products.jpg' },
-            { 'slug': 'cleaning-products', 'name': 'Cleaning Products', 'tagline': 'Industrial & Commercial', 'image': 'cleaning products.webp' },
-            { 'slug': 'hvac-spare-parts', 'name': 'HVAC & Spare Parts', 'tagline': 'AC, Chillers & Parts', 'image': 'hvac & spare parts.jpg' },
-            { 'slug': 'maintenance-services', 'name': 'Maintenance & Services', 'tagline': 'Repair & Programming', 'image': 'maintenance & services.jpg' },
-            { 'slug': 'tools', 'name': 'Tools', 'tagline': 'Hand & Power Tools', 'image': 'tools.webp' }
-        ] %}
-
+        {% if home_categories %}
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-12" data-aos="fade-up">
-            {% for c in home_categories %}
+            {% for category in home_categories %}
             <div class="category-card bg-white p-5 rounded-2xl border border-gray-100 shadow-sm group">
                 <div class="w-full h-32 rounded-xl overflow-hidden mb-4">
-                    <img src="/static/categories/{{ c.image }}" alt="{{ c.name }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                    {% if category.image %}
+                    <img src="{{ category.image | variant('card') }}" alt="{{ category.name }}" loading="lazy"
+                         class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                    {% else %}
+                    <div class="w-full h-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                        <span class="text-primary text-3xl font-bold">{{ category.name[0] }}</span>
+                    </div>
+                    {% endif %}
                 </div>
-                <h4 class="font-bold text-gray-900 text-sm text-center">{{ c.name }}</h4>
-                <p class="text-xs text-gray-500 text-center mt-1 mb-3">{{ c.tagline }}</p>
-                <a href="/category/{{ c.slug }}" class="block w-full text-xs bg-primary text-white py-2 rounded-lg font-medium hover:bg-primary-dark transition text-center">View Details</a>
+                <h4 class="font-bold text-gray-900 text-sm text-center">{{ category.name }}</h4>
+                <p class="text-xs text-gray-500 text-center mt-1 mb-3 line-clamp-2">
+                    {{ category.hero_description or category.description or '' }}
+                </p>
+                <a href="/category/{{ category.slug }}" class="block w-full text-xs bg-primary text-white py-2 rounded-lg font-medium hover:bg-primary-dark transition text-center">View Details</a>
             </div>
             {% endfor %}
         </div>
+        {% else %}
+        <p class="text-center text-gray-500 mb-12" data-aos="fade-up">
+            No categories are shown on the homepage yet. Publish categories in admin and enable <strong>Show on Home</strong>,
+            or <a href="/categories" class="text-primary font-medium hover:underline">browse all categories</a>.
+        </p>
+        {% endif %}
 
         <div class="text-center" data-aos="fade-up">
             <p class="text-gray-600 mb-4">Can't find what you need? We source products globally!</p>
@@ -418,7 +450,7 @@
                         <h3 class="text-2xl md:text-3xl font-bold text-white mb-3 leading-tight">Complete Industrial<br>Automation Solutions</h3>
                         <p class="text-white/90 text-sm md:text-base max-w-xs mb-6">PLCs, VFDs, HMIs, sensors and more from world-leading brands. Expert support included.</p>
                     </div>
-                    <a href="/category/industrial-automation" class="inline-flex items-center gap-2 bg-white text-primary font-semibold py-3 px-6 rounded-xl w-fit hover:bg-gray-100 transition group-hover:shadow-lg">
+                    <a href="/category/{{ home_categories[0].slug if home_categories else 'industrial-automation' }}" class="inline-flex items-center gap-2 bg-white text-primary font-semibold py-3 px-6 rounded-xl w-fit hover:bg-gray-100 transition group-hover:shadow-lg">
                         <span>Explore Now</span>
                         <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                     </a>
@@ -436,7 +468,7 @@
                         <h3 class="text-2xl md:text-3xl font-bold text-white mb-3 leading-tight">Professional Lifting<br>& Rigging Equipment</h3>
                         <p class="text-white/90 text-sm md:text-base max-w-xs mb-6">Chain hoists, wire ropes, shackles &amp; slings. Certified products from trusted brands.</p>
                     </div>
-                    <a href="/category/lifting-equipment" class="inline-flex items-center gap-2 bg-white text-primary font-semibold py-3 px-6 rounded-xl w-fit hover:bg-gray-100 transition group-hover:shadow-lg">
+                    <a href="/category/{{ home_categories[1].slug if home_categories|length > 1 else 'lifting-equipment' }}" class="inline-flex items-center gap-2 bg-white text-primary font-semibold py-3 px-6 rounded-xl w-fit hover:bg-gray-100 transition group-hover:shadow-lg">
                         <span>View Products</span>
                         <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                     </a>
@@ -471,15 +503,32 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <p class="text-center text-gray-400 text-sm uppercase tracking-widest mb-8">Trusted Brands We Deal With</p>
     </div>
+    {% if home_brands %}
     <div class="brands-scroll-container">
         <div class="brands-scroll">
-            {% for _ in range(2) %}
-                {% for n in range(1, 17) %}
-                    <img src="/static/brands/brand{{ n }}.png" alt="Brand" loading="lazy" class="h-10 w-auto mx-6 hover:scale-125 transition-transform duration-300">
+            {% for _ in range(4) %}
+                {% for brand in home_brands %}
+                <a href="/brand/{{ brand.slug }}" class="inline-flex items-center shrink-0 mx-6" title="{{ brand.name }}">
+                    {% if brand.logo %}
+                    <img src="{{ brand.logo | variant('thumb') }}" alt="{{ brand.name }} logo" loading="lazy"
+                         class="h-10 w-auto hover:scale-125 transition-transform duration-300">
+                    {% else %}
+                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                        <span class="text-primary text-xl font-bold">{{ brand.name[0] }}</span>
+                    </div>
+                    {% endif %}
+                </a>
                 {% endfor %}
             {% endfor %}
         </div>
     </div>
+    {% else %}
+    <p class="text-center text-gray-500 pb-4 max-w-lg mx-auto px-4">
+        No published brands to display yet.
+        <a href="/brands" class="text-primary font-medium hover:underline">View brands</a>
+        or add and publish brands in admin.
+    </p>
+    {% endif %}
 </section>
 
 <!-- About -->
