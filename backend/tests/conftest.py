@@ -1,4 +1,7 @@
 import os
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 # Settings() runs at import time (via app.main). CI writes backend/.env from
 # .env.example; locally pytest may run without .env — set a valid key first.
