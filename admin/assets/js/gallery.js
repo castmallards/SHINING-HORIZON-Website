@@ -30,7 +30,7 @@
             <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
-            <span>Add images</span>
+            <span>Add or drop images</span>
         `;
         addTile.addEventListener('click', () => fileInput.click());
         container.appendChild(addTile);
@@ -108,9 +108,7 @@
             });
         }
 
-        fileInput.addEventListener('change', async () => {
-            const files = Array.from(fileInput.files || []);
-            fileInput.value = '';
+        async function uploadFiles(files) {
             for (const f of files) {
                 try {
                     const result = await uploadAPI.uploadImage(f, folder);
@@ -122,7 +120,20 @@
                     else alert(err.message);
                 }
             }
+        }
+
+        fileInput.addEventListener('change', async () => {
+            const files = Array.from(fileInput.files || []);
+            fileInput.value = '';
+            await uploadFiles(files);
         });
+
+        if (typeof wireImageDropZone === 'function') {
+            wireImageDropZone(container, {
+                multiple: true,
+                onFiles: (files) => uploadFiles(files),
+            });
+        }
 
         function setValue(value) {
             items = Array.isArray(value) ? [...value] : [];

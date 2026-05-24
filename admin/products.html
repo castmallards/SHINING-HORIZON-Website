@@ -189,7 +189,7 @@
 
                     <div class="form-section">
                         <h4>Image gallery</h4>
-                        <p style="color:#64748b; font-size:0.8125rem; margin: 0 0 8px;">Drag to reorder. The first image is shown first on the product page.</p>
+                        <p style="color:#64748b; font-size:0.8125rem; margin: 0 0 8px;">Drag images here or use Add images. Drag tiles to reorder. First image shows first on the product page.</p>
                         <input type="hidden" name="gallery" id="gallery-input" value="[]">
                         <div id="gallery-container"></div>
                     </div>
@@ -249,6 +249,8 @@
     <script src="assets/js/auth.js"></script>
     <script src="assets/js/api.js"></script>
     <script src="assets/js/utils.js"></script>
+    <script src="assets/js/image-drop.js"></script>
+    <script src="assets/js/quick-add.js"></script>
     <script src="assets/js/editor.js"></script>
     <script src="assets/js/gallery.js"></script>
     <script src="assets/js/specs.js"></script>
@@ -275,11 +277,30 @@
             renderBlankPreview();
             document.getElementById('filter-search').addEventListener('input', search);
             await Promise.all([loadCategories(), loadBrands()]);
+            QuickAdd.init({
+                mode: 'product',
+                selects: {
+                    category: 'modal-category',
+                    subcategory: 'modal-subcategory',
+                    brand: 'modal-brand',
+                },
+                getCategoryId: () => document.getElementById('modal-category').value,
+                getCategoriesList: () => categories,
+                reloadCategories: loadCategories,
+                reloadBrands: loadBrands,
+                onCategoryChange: onModalCategoryChange,
+            });
+            const uploadZone = document.querySelector('#product-form .image-upload');
+            if (uploadZone) {
+                wireImageDropZone(uploadZone, {
+                    onFiles: (files) => uploadPrimaryProductImage(files[0]),
+                });
+            }
             await reload();
         });
 
         function blankPreview() {
-            return `<svg width="40" height="40" fill="none" stroke="#9ca3af" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg><p style="margin-top: 8px; color: #64748b; font-size: 0.875rem;">Click to upload image</p>`;
+            return `<svg width="40" height="40" fill="none" stroke="#9ca3af" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>${typeof imageUploadHint === 'function' ? imageUploadHint() : '<p style="margin-top: 8px; color: #64748b; font-size: 0.875rem;">Click or drag image here</p>'}`;
         }
         function renderBlankPreview() { document.getElementById('image-preview').innerHTML = blankPreview(); }
 
@@ -630,8 +651,7 @@
             }
         }
 
-        async function handleImageUpload(input) {
-            const file = input.files[0];
+        async function uploadPrimaryProductImage(file) {
             if (!file) return;
             const preview = document.getElementById('image-preview');
             preview.innerHTML = '<div class="spinner"></div>';
@@ -644,6 +664,12 @@
                 preview.innerHTML = `<p style="color:#dc2626;">Upload failed: ${error.message}</p>`;
                 showToast('Upload failed', 'error');
             }
+        }
+
+        async function handleImageUpload(input) {
+            const file = input.files?.[0];
+            if (file) await uploadPrimaryProductImage(file);
+            input.value = '';
         }
 
         document.getElementById('part-number-input')?.addEventListener('blur', validatePartNumberOnBlur);

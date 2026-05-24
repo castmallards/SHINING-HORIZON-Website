@@ -561,8 +561,49 @@ tr:hover {
     border-color: var(--primary);
 }
 
+.image-upload.is-drag-over {
+    border-color: var(--primary);
+    background: #f0f9ff;
+}
+
 .image-upload input {
     display: none;
+}
+
+.form-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.form-label-row .form-label {
+    margin-bottom: 0;
+}
+
+.btn-quick-add {
+    flex-shrink: 0;
+    padding: 2px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--primary);
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-quick-add:hover {
+    background: #dbeafe;
+    border-color: var(--primary);
+}
+
+#gallery-container.is-drag-over .gallery-add,
+.gallery-grid.is-drag-over {
+    outline: 2px dashed var(--primary);
+    outline-offset: 2px;
 }
 
 /* Toast Notifications */
