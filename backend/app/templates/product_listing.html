@@ -60,8 +60,12 @@
                         <div class="flex items-center justify-between mb-3">
                             <div>
                                 {% if product.part_number %}
-                                    <p class="text-xs text-gray-500 mb-1">Part Number:</p>
-                                    <p class="text-gray-900 font-semibold">{{ product.part_number }}</p>
+                                    <p class="text-gray-900 font-semibold font-mono">
+                                        <a href="/product/{{ product.slug }}" class="hover:text-primary transition">{{ product.part_number }}</a>
+                                    </p>
+                                    {% if product.name and product.name != product.part_number %}
+                                        <p class="text-xs text-gray-500 mt-1 line-clamp-2">{{ product.name }}</p>
+                                    {% endif %}
                                 {% else %}
                                     <p class="text-gray-900 font-semibold">
                                         <a href="/product/{{ product.slug }}" class="hover:text-primary transition">{{ product.name }}</a>

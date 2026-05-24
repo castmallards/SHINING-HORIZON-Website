@@ -49,7 +49,7 @@
     {'name': 'Home', 'url': '/'},
     {'name': category.name, 'url': '/category/' ~ category.slug} if category else None,
     {'name': subcategory.name, 'url': '/category/' ~ category.slug ~ '/' ~ subcategory.slug} if subcategory else None,
-    {'name': product.name}
+    {'name': product.part_number or product.name}
 ] | reject('none') | list) }}
 
 <section class="bg-white py-12">
@@ -124,13 +124,11 @@
                     </a>
                 </div>
 
-                <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">{{ product.name }}</h1>
-
-                {% if product.part_number %}
-                    <p class="text-sm text-gray-600 mb-4">
-                        <span class="font-semibold text-gray-900">Part Number:</span>
-                        <span class="bg-gray-100 px-2 py-1 rounded font-mono">{{ product.part_number }}</span>
-                    </p>
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2{% if product.part_number %} font-mono{% endif %}">
+                    {{ product.part_number or product.name }}
+                </h1>
+                {% if product.part_number and product.name and product.name != product.part_number %}
+                    <p class="text-lg text-gray-600 mb-4">{{ product.name }}</p>
                 {% endif %}
 
                 {% if product.short_description %}
@@ -238,7 +236,7 @@
 
 <section class="bg-gradient-to-r from-primary to-primary-dark py-12">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 class="text-2xl font-bold text-white mb-3">Need pricing on {{ product.name }}?</h2>
+        <h2 class="text-2xl font-bold text-white mb-3">Need pricing on {{ product.part_number or product.name }}?</h2>
         <p class="text-white/90 mb-6 max-w-xl mx-auto">Send us your specifications and we'll respond within 24 hours.</p>
         <div class="flex flex-wrap justify-center gap-4">
             <a href="/quote?product={{ (product.part_number or product.name) | urlencode }}{% if brand %}&brand={{ brand.name | urlencode }}{% endif %}" class="bg-white text-primary font-semibold py-3 px-6 rounded-lg hover:bg-gray-100 transition">Request Quote</a>

@@ -68,7 +68,7 @@
             <div class="card-track flex h-full transition-transform duration-300 ease-out">
                 {% for src in _imgs %}
                     <div class="card-slide flex-shrink-0 w-full h-full flex items-center justify-center p-4">
-                        <img src="{{ src | variant('card') }}" alt="{{ product.name }}{% if not loop.first %} view {{ loop.index }}{% endif %}"
+                        <img src="{{ src | variant('card') }}" alt="{{ product.part_number or product.name }}{% if not loop.first %} view {{ loop.index }}{% endif %}"
                              loading="lazy" decoding="async"
                              class="max-h-full max-w-full object-contain">
                     </div>
@@ -87,10 +87,28 @@
             {% endif %}
         {% else %}
             <div class="w-full h-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center" aria-hidden="true">
-                <span class="text-primary text-4xl font-bold">{{ product.name[0] }}</span>
+                <span class="text-primary text-4xl font-bold">{{ (product.part_number or product.name)[0] }}</span>
             </div>
         {% endif %}
     </div>
+{% endmacro %}
+
+
+{# Primary catalog label: part number when set, otherwise product name. #}
+{% macro product_primary_id(product) -%}
+{{- product.part_number or product.name -}}
+{%- endmacro %}
+
+
+{# Card/list title: part number (mono) as headline; full name as subtitle when both differ. #}
+{% macro product_card_title(product, heading_class='text-base font-bold text-gray-900 mb-1 line-clamp-2', subtitle_class='text-gray-500 text-xs mb-2 line-clamp-2') %}
+    {% set primary = product.part_number or product.name %}
+    <h3 class="{{ heading_class }}{% if product.part_number %} font-mono{% endif %}">
+        <a href="/product/{{ product.slug }}" class="hover:text-primary transition">{{ primary }}</a>
+    </h3>
+    {% if product.part_number and product.name and product.name != product.part_number %}
+        <p class="{{ subtitle_class }}">{{ product.name }}</p>
+    {% endif %}
 {% endmacro %}
 
 
@@ -104,9 +122,7 @@
         {% if product.brand_name %}
             <p class="text-xs text-primary font-semibold uppercase tracking-wider mb-1">{{ product.brand_name }}</p>
         {% endif %}
-        <h3 class="text-base font-bold text-gray-900 mb-1 line-clamp-2">
-            <a href="/product/{{ product.slug }}" class="hover:text-primary transition">{{ product.name }}</a>
-        </h3>
+        {{ product_card_title(product) }}
         {% if product.short_description %}
             <p class="text-gray-500 text-sm mb-3 line-clamp-2">{{ product.short_description }}</p>
         {% endif %}
