@@ -110,6 +110,7 @@ def _card_dict(p: Product) -> dict:
         "slug": p.slug,
         "name": p.name,
         "image": p.image,
+        "cover_image": p.cover_image,
         "part_number": p.part_number,
         "short_description": p.short_description,
         "brand_name": p.brand.name if p.brand else None,
@@ -509,18 +510,7 @@ def product_detail(slug: str, request: Request, db: Session = Depends(get_db)):
     elif product.category_id:
         related_q = related_q.filter(Product.category_id == product.category_id)
     related_rows = related_q.order_by(Product.display_order, Product.id).limit(4).all()
-    related_products = [
-        {
-            "id": r.id,
-            "name": r.name,
-            "slug": r.slug,
-            "image": r.image,
-            "part_number": r.part_number,
-            "short_description": r.short_description,
-            "brand_name": r.brand.name if r.brand else None,
-        }
-        for r in related_rows
-    ]
+    related_products = [_card_dict(r) for r in related_rows]
 
     # Gallery: main image first, then any additional gallery images.
     # De-duplicate so the cover image is never listed twice.
@@ -532,7 +522,8 @@ def product_detail(slug: str, request: Request, db: Session = Depends(get_db)):
 
     canonical = str(request.url_for("product_detail", slug=product.slug))
     base_url = str(request.base_url)
-    hero_image = variant_url(product.image, "hero") if product.image else None
+    cover_path = product.cover_image
+    hero_image = variant_url(cover_path, "hero") if cover_path else None
     if hero_image and hero_image.startswith("/"):
         hero_image_abs = base_url.rstrip("/") + hero_image
     else:

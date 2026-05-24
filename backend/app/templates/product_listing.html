@@ -25,8 +25,8 @@
             <div class="flex justify-center">
                 {% if subcategory.image %}
                     <img src="{{ subcategory.image | variant('hero') }}" alt="{{ subcategory.name }}" loading="lazy" class="w-full max-w-md rounded-2xl shadow-2xl bg-white p-6">
-                {% elif products and products[0].product.image %}
-                    <img src="{{ products[0].product.image | variant('hero') }}" alt="{{ subcategory.name }}" loading="lazy" class="w-full max-w-md rounded-2xl shadow-2xl bg-white p-6">
+                {% elif products and products[0].product.cover_image %}
+                    <img src="{{ products[0].product.cover_image | variant('hero') }}" alt="{{ subcategory.name }}" loading="lazy" class="w-full max-w-md rounded-2xl shadow-2xl bg-white p-6">
                 {% endif %}
             </div>
         </div>
@@ -47,11 +47,11 @@
                 <article class="product-card bg-white rounded-xl shadow-md overflow-hidden border border-gray-100" data-aos="fade-up" data-aos-delay="{{ (loop.index0 % 3) * 50 }}">
                     <a href="/product/{{ product.slug }}" class="block">
                         <div class="h-44 bg-gray-100 flex items-center justify-center p-4 rounded-t-xl">
-                            {% if product.image %}
-                                <img src="{{ product.image | variant('card') }}" alt="{{ product.name }}" loading="lazy" class="max-h-full max-w-full object-contain">
+                            {% if product.cover_image %}
+                                <img src="{{ product.cover_image | variant('card') }}" alt="{{ product.name }}" loading="lazy" class="max-h-full max-w-full object-contain">
                             {% else %}
                                 <div class="w-full h-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center rounded-lg" aria-hidden="true">
-                                    <span class="text-primary text-2xl font-bold">{{ product.name[0] }}</span>
+                                    <span class="text-primary text-2xl font-bold">{{ (product.part_number or product.name)[0] }}</span>
                                 </div>
                             {% endif %}
                         </div>

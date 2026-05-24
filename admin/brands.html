@@ -163,7 +163,7 @@
     <script src="assets/js/auth.js"></script>
     <script src="assets/js/api.js"></script>
     <script src="assets/js/utils.js"></script>
-    <script src="assets/js/image-drop.js"></script>
+    <script src="assets/js/image-drop.js?v=3"></script>
     <script>
         if (!requireAuth()) {}
 
@@ -177,6 +177,7 @@
             if (uploadZone) {
                 wireImageDropZone(uploadZone, {
                     onFiles: (files) => uploadBrandLogo(files[0]),
+                    onUrl: (url) => uploadBrandLogoFromUrl(url),
                 });
             }
             await loadBrands();
@@ -294,6 +295,21 @@
             } catch (error) {
                 preview.innerHTML = `<p style="color:#dc2626;">Upload failed: ${error.message}</p>`;
                 showToast('Upload failed', 'error');
+            }
+        }
+
+        async function uploadBrandLogoFromUrl(url) {
+            if (!url) return;
+            const preview = document.getElementById('logo-preview');
+            preview.innerHTML = '<div class="spinner"></div>';
+            try {
+                const result = await uploadAPI.uploadImageFromUrl(url, 'brands');
+                document.getElementById('logo-path').value = result.path;
+                preview.innerHTML = `<img src="${adminImageUrl(result.path, 'card')}" style="max-width:100%; max-height:150px; border-radius:8px;">`;
+                showToast('Logo imported');
+            } catch (error) {
+                preview.innerHTML = `<p style="color:#dc2626;">Import failed: ${error.message}</p>`;
+                showToast('Import failed', 'error');
             }
         }
 

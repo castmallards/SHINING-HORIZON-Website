@@ -102,8 +102,10 @@
 
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                         <div class="form-group">
-                            <label class="form-label">Category *</label>
-                            <select name="category_id" id="modal-category" class="form-select" required></select>
+                            <label class="form-label" for="modal-category">Category *</label>
+                            <div class="select-with-action" data-quick-add="category" data-quick-add-label="New Category">
+                                <select name="category_id" id="modal-category" class="form-select" required></select>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Status *</label>
@@ -170,7 +172,7 @@
     <script src="assets/js/auth.js"></script>
     <script src="assets/js/api.js"></script>
     <script src="assets/js/utils.js"></script>
-    <script src="assets/js/image-drop.js"></script>
+    <script src="assets/js/image-drop.js?v=3"></script>
     <script src="assets/js/quick-add.js"></script>
     <script>
         if (!requireAuth()) {}
@@ -182,17 +184,19 @@
             initUserInfo();
             applyRoleGates();
             renderBlankPreview();
-            await loadCategories();
             QuickAdd.init({
                 mode: 'subcategory',
+                root: document.getElementById('subcategory-form'),
                 selects: { category: 'modal-category' },
                 getCategoriesList: () => categories,
                 reloadCategories: loadCategories,
             });
+            await loadCategories();
             const uploadZone = document.querySelector('#subcategory-form .image-upload');
             if (uploadZone) {
                 wireImageDropZone(uploadZone, {
                     onFiles: (files) => uploadSubcategoryImage(files[0]),
+                    onUrl: (url) => uploadSubcategoryImageFromUrl(url),
                 });
             }
             await loadSubcategories();
@@ -334,6 +338,21 @@
             } catch (error) {
                 preview.innerHTML = `<p style="color:#dc2626;">Upload failed: ${error.message}</p>`;
                 showToast('Upload failed', 'error');
+            }
+        }
+
+        async function uploadSubcategoryImageFromUrl(url) {
+            if (!url) return;
+            const preview = document.getElementById('image-preview');
+            preview.innerHTML = '<div class="spinner"></div>';
+            try {
+                const result = await uploadAPI.uploadImageFromUrl(url, 'subcategories');
+                document.getElementById('image-path').value = result.path;
+                preview.innerHTML = `<img src="${adminImageUrl(result.path, 'card')}" style="max-width:100%; max-height:150px; border-radius:8px;">`;
+                showToast('Image imported');
+            } catch (error) {
+                preview.innerHTML = `<p style="color:#dc2626;">Import failed: ${error.message}</p>`;
+                showToast('Import failed', 'error');
             }
         }
 

@@ -52,16 +52,28 @@
 </div>
 {% endmacro %}
 
+{# Listing/detail cover: primary image, else first gallery image. #}
+{% macro product_cover_src(product) -%}
+{%- if product.cover_image is defined and product.cover_image -%}{{ product.cover_image }}
+{%- elif product.image -%}{{ product.image }}
+{%- elif product.gallery is iterable and product.gallery is not string and product.gallery -%}{{ product.gallery[0] }}
+{%- elif product.gallery_list is defined and product.gallery_list -%}{{ product.gallery_list[0] }}
+{%- endif -%}
+{%- endmacro %}
+
 {# Card carousel: builds the deduplicated [main + gallery] image list and emits #}
 {# arrow buttons + a counter only when there's more than one image to scroll. #}
 {% macro card_carousel(product) %}
     {% set _imgs = [] %}
-    {% if product.image %}{% set _ = _imgs.append(product.image) %}{% endif %}
+    {% set _cover = product_cover_src(product) | trim %}
+    {% if _cover %}{% set _ = _imgs.append(_cover) %}{% endif %}
     {# Guard: only iterate gallery when it is a list (dict from _card_dict).
        If an ORM object slips through, product.gallery is a raw JSON string —
        iterating a string gives individual characters, not image paths. #}
     {% if product.gallery is iterable and product.gallery is not string %}
         {% for src in product.gallery %}{% if src and src not in _imgs %}{% set _ = _imgs.append(src) %}{% endif %}{% endfor %}
+    {% elif product.gallery_list is defined and product.gallery_list is not string %}
+        {% for src in product.gallery_list %}{% if src and src not in _imgs %}{% set _ = _imgs.append(src) %}{% endif %}{% endfor %}
     {% endif %}
     <div class="card-carousel relative h-44 sm:h-48 bg-gray-50 overflow-hidden" data-count="{{ _imgs|length }}">
         {% if _imgs %}

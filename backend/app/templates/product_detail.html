@@ -56,14 +56,15 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid lg:grid-cols-2 gap-12">
             <div>
+                {# Hero: primary image, else first gallery image, else name initial. #}
+                {% set hero_src = product.cover_image or (gallery_items[0] if gallery_items else none) %}
                 <div class="gallery-hero relative bg-gray-50 rounded-2xl p-8 flex items-center justify-center mb-4 min-h-[400px]">
-                    {% if product.image %}
-                        {# Above-the-fold hero — eager loaded so LCP is fast. #}
+                    {% if hero_src %}
                         <picture>
                             <source type="image/webp"
-                                    srcset="{{ product.image | variant('card') }} 600w, {{ product.image | variant('hero') }} 1600w"
+                                    srcset="{{ hero_src | variant('card') }} 600w, {{ hero_src | variant('hero') }} 1600w"
                                     sizes="(max-width: 1024px) 90vw, 600px">
-                            <img id="product-hero-image" src="{{ product.image | variant('hero') }}" alt="{{ product.name }}"
+                            <img id="product-hero-image" src="{{ hero_src | variant('hero') }}" alt="{{ product.name }}"
                                  fetchpriority="high" decoding="async"
                                  class="max-h-[400px] max-w-full object-contain">
                         </picture>
@@ -280,9 +281,12 @@
             if (counter) counter.textContent = (current + 1) + ' / ' + total;
         }
 
-        thumbs.forEach((btn, i) => btn.addEventListener('click', () => show(i)));
-        prev && prev.addEventListener('click', () => show(current - 1));
-        next && next.addEventListener('click', () => show(current + 1));
+        thumbs.forEach((btn, i) => btn.addEventListener('click', (e) => { e.preventDefault(); show(i); }));
+        prev && prev.addEventListener('click', (e) => { e.preventDefault(); show(current - 1); });
+        next && next.addEventListener('click', (e) => { e.preventDefault(); show(current + 1); });
+
+        // Sync hero with first thumb (needed when primary image is empty but gallery exists).
+        show(0);
 
         // Keyboard arrows when the gallery has focus or no input is focused.
         document.addEventListener('keydown', (e) => {

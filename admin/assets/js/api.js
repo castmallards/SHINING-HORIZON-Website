@@ -155,6 +155,12 @@ const uploadAPI = {
         }
         return response.json();
     },
+    uploadImageFromUrl: async (url, folder) => {
+        return apiRequest(`/upload/image-from-url/${folder}`, {
+            method: 'POST',
+            body: JSON.stringify({ url }),
+        });
+    },
 };
 
 const importAPI = {

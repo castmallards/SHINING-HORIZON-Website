@@ -109,16 +109,31 @@
         }
 
         async function uploadFiles(files) {
-            for (const f of files) {
+            const list = typeof dedupeImageFiles === 'function' ? dedupeImageFiles(files) : files;
+            for (const f of list) {
                 try {
                     const result = await uploadAPI.uploadImage(f, folder);
-                    items.push(result.path);
+                    if (!items.includes(result.path)) {
+                        items.push(result.path);
+                    }
                     persist();
                     render();
                 } catch (err) {
                     if (typeof showToast === 'function') showToast(err.message, 'error');
                     else alert(err.message);
                 }
+            }
+        }
+
+        async function uploadFromUrl(url) {
+            try {
+                const result = await uploadAPI.uploadImageFromUrl(url, folder);
+                items.push(result.path);
+                persist();
+                render();
+            } catch (err) {
+                if (typeof showToast === 'function') showToast(err.message, 'error');
+                else alert(err.message);
             }
         }
 
@@ -132,6 +147,7 @@
             wireImageDropZone(container, {
                 multiple: true,
                 onFiles: (files) => uploadFiles(files),
+                onUrl: (url) => uploadFromUrl(url),
             });
         }
 

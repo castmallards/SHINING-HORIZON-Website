@@ -15,7 +15,7 @@
         overlay.id = 'quick-add-modal';
         overlay.style.zIndex = '500';
         overlay.innerHTML = `
-            <div class="modal" style="max-width: 440px;">
+            <div class="modal" style="max-width: 480px; width: calc(100vw - 32px);">
                 <div class="modal-header">
                     <h3 class="modal-title" id="quick-add-title">Quick add</h3>
                     <button type="button" class="modal-close" aria-label="Close" id="quick-add-close">
@@ -178,43 +178,42 @@
         }
     }
 
-    function attachQuickAddButton(labelEl, type) {
-        if (!labelEl || labelEl.querySelector('.btn-quick-add')) return;
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'btn-quick-add';
-        btn.textContent = '+ New';
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            open(type);
+    const QUICK_ADD_LABELS = {
+        category: 'New Category',
+        subcategory: 'New Subcategory',
+        brand: 'New Brand',
+    };
+
+    function attachQuickAddButtons(root) {
+        if (!root) return;
+        root.querySelectorAll('.select-with-action[data-quick-add]').forEach((wrap) => {
+            if (wrap.querySelector('.btn-quick-add')) return;
+            const type = wrap.getAttribute('data-quick-add');
+            if (!type) return;
+
+            const label =
+                wrap.getAttribute('data-quick-add-label') ||
+                QUICK_ADD_LABELS[type] ||
+                'New';
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn-quick-add';
+            btn.textContent = label;
+            btn.title = label;
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                open(type);
+            });
+            wrap.appendChild(btn);
         });
-        const row = document.createElement('div');
-        row.className = 'form-label-row';
-        labelEl.parentNode.insertBefore(row, labelEl);
-        row.appendChild(labelEl);
-        row.appendChild(btn);
-    }
-
-    function wireProductForm() {
-        const catLabel = document.querySelector('#modal-category')?.closest('.form-group')?.querySelector('.form-label');
-        const subLabel = document.querySelector('#subcategory-group .form-label');
-        const brandLabel = document.querySelector('#modal-brand')?.closest('.form-group')?.querySelector('.form-label');
-        attachQuickAddButton(catLabel, 'category');
-        attachQuickAddButton(subLabel, 'subcategory');
-        attachQuickAddButton(brandLabel, 'brand');
-    }
-
-    function wireSubcategoryForm() {
-        const catLabel = document.querySelector('#modal-category')?.closest('.form-group')?.querySelector('.form-label');
-        attachQuickAddButton(catLabel, 'category');
     }
 
     function init(options) {
         config = options || {};
         ensureModal();
-        if (config.mode === 'product') wireProductForm();
-        if (config.mode === 'subcategory') wireSubcategoryForm();
+        attachQuickAddButtons(config.root || document);
     }
 
     global.QuickAdd = { init, open, close };
