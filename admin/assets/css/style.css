@@ -561,8 +561,135 @@ tr:hover {
     border-color: var(--primary);
 }
 
+.image-upload.is-drag-over {
+    border-color: var(--primary);
+    background: #f0f9ff;
+}
+
+.primary-image-upload {
+    position: relative;
+}
+
+.primary-image-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 26px;
+    height: 26px;
+    border: none;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    border-radius: 50%;
+    cursor: pointer;
+    line-height: 1;
+    font-size: 16px;
+    z-index: 5;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.primary-image-remove.is-visible {
+    display: flex;
+}
+
+.primary-image-remove:hover {
+    background: #dc2626;
+}
+
+.image-url-import-hint {
+    margin-top: 6px;
+    color: #64748b;
+    font-size: 0.8125rem;
+}
+
 .image-upload input {
     display: none;
+}
+
+/* Must beat .modal { max-width: 600px; width: 90% } — product form needs room for selects + quick-add */
+#product-modal > .modal.modal-wide,
+.modal.modal-wide {
+    width: min(920px, 94vw);
+    max-width: 920px;
+}
+
+.form-grid {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 4px;
+}
+
+.form-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 900px) {
+    #product-form .form-grid-3 {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 720px) {
+    .form-grid-2,
+    .form-grid-3 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.select-with-action {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+}
+
+.select-with-action .form-select {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+}
+
+.btn-quick-add {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+    min-height: 42px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: #fff;
+    background: var(--primary);
+    border: 1px solid var(--primary);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(45, 139, 201, 0.2);
+}
+
+.btn-quick-add:hover {
+    background: var(--primary-dark);
+    border-color: var(--primary-dark);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(45, 139, 201, 0.35);
+}
+
+.btn-quick-add:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+#gallery-container.is-drag-over .gallery-add,
+.gallery-grid.is-drag-over {
+    outline: 2px dashed var(--primary);
+    outline-offset: 2px;
 }
 
 /* Toast Notifications */

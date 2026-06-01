@@ -30,7 +30,7 @@
             <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
-            <span>Add images</span>
+            <span>Add or drop images</span>
         `;
         addTile.addEventListener('click', () => fileInput.click());
         container.appendChild(addTile);
@@ -108,13 +108,14 @@
             });
         }
 
-        fileInput.addEventListener('change', async () => {
-            const files = Array.from(fileInput.files || []);
-            fileInput.value = '';
-            for (const f of files) {
+        async function uploadFiles(files) {
+            const list = typeof dedupeImageFiles === 'function' ? dedupeImageFiles(files) : files;
+            for (const f of list) {
                 try {
                     const result = await uploadAPI.uploadImage(f, folder);
-                    items.push(result.path);
+                    if (!items.includes(result.path)) {
+                        items.push(result.path);
+                    }
                     persist();
                     render();
                 } catch (err) {
@@ -122,7 +123,33 @@
                     else alert(err.message);
                 }
             }
+        }
+
+        async function uploadFromUrl(url) {
+            try {
+                const result = await uploadAPI.uploadImageFromUrl(url, folder);
+                items.push(result.path);
+                persist();
+                render();
+            } catch (err) {
+                if (typeof showToast === 'function') showToast(err.message, 'error');
+                else alert(err.message);
+            }
+        }
+
+        fileInput.addEventListener('change', async () => {
+            const files = Array.from(fileInput.files || []);
+            fileInput.value = '';
+            await uploadFiles(files);
         });
+
+        if (typeof wireImageDropZone === 'function') {
+            wireImageDropZone(container, {
+                multiple: true,
+                onFiles: (files) => uploadFiles(files),
+                onUrl: (url) => uploadFromUrl(url),
+            });
+        }
 
         function setValue(value) {
             items = Array.isArray(value) ? [...value] : [];

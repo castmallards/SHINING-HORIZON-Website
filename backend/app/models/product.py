@@ -1,4 +1,6 @@
 import json
+from typing import Optional
+
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Enum, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -71,3 +73,11 @@ class Product(Base):
     @gallery_list.setter
     def gallery_list(self, value: list[str]) -> None:
         self.gallery = json.dumps(value or [])
+
+    @property
+    def cover_image(self) -> Optional[str]:
+        """Primary listing image, or first gallery image when primary is unset."""
+        if self.image:
+            return self.image
+        gallery = self.gallery_list
+        return gallery[0] if gallery else None

@@ -49,21 +49,22 @@
     {'name': 'Home', 'url': '/'},
     {'name': category.name, 'url': '/category/' ~ category.slug} if category else None,
     {'name': subcategory.name, 'url': '/category/' ~ category.slug ~ '/' ~ subcategory.slug} if subcategory else None,
-    {'name': product.name}
+    {'name': product.part_number or product.name}
 ] | reject('none') | list) }}
 
 <section class="bg-white py-12">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid lg:grid-cols-2 gap-12">
             <div>
+                {# Hero: primary image, else first gallery image, else name initial. #}
+                {% set hero_src = product.cover_image or (gallery_items[0] if gallery_items else none) %}
                 <div class="gallery-hero relative bg-gray-50 rounded-2xl p-8 flex items-center justify-center mb-4 min-h-[400px]">
-                    {% if product.image %}
-                        {# Above-the-fold hero — eager loaded so LCP is fast. #}
+                    {% if hero_src %}
                         <picture>
                             <source type="image/webp"
-                                    srcset="{{ product.image | variant('card') }} 600w, {{ product.image | variant('hero') }} 1600w"
+                                    srcset="{{ hero_src | variant('card') }} 600w, {{ hero_src | variant('hero') }} 1600w"
                                     sizes="(max-width: 1024px) 90vw, 600px">
-                            <img id="product-hero-image" src="{{ product.image | variant('hero') }}" alt="{{ product.name }}"
+                            <img id="product-hero-image" src="{{ hero_src | variant('hero') }}" alt="{{ product.name }}"
                                  fetchpriority="high" decoding="async"
                                  class="max-h-[400px] max-w-full object-contain">
                         </picture>
@@ -124,13 +125,11 @@
                     </a>
                 </div>
 
-                <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">{{ product.name }}</h1>
-
-                {% if product.part_number %}
-                    <p class="text-sm text-gray-600 mb-4">
-                        <span class="font-semibold text-gray-900">Part Number:</span>
-                        <span class="bg-gray-100 px-2 py-1 rounded font-mono">{{ product.part_number }}</span>
-                    </p>
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2{% if product.part_number %} font-mono{% endif %}">
+                    {{ product.part_number or product.name }}
+                </h1>
+                {% if product.part_number and product.name and product.name != product.part_number %}
+                    <p class="text-lg text-gray-600 mb-4">{{ product.name }}</p>
                 {% endif %}
 
                 {% if product.short_description %}
@@ -238,7 +237,7 @@
 
 <section class="bg-gradient-to-r from-primary to-primary-dark py-12">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 class="text-2xl font-bold text-white mb-3">Need pricing on {{ product.name }}?</h2>
+        <h2 class="text-2xl font-bold text-white mb-3">Need pricing on {{ product.part_number or product.name }}?</h2>
         <p class="text-white/90 mb-6 max-w-xl mx-auto">Send us your specifications and we'll respond within 24 hours.</p>
         <div class="flex flex-wrap justify-center gap-4">
             <a href="/quote?product={{ (product.part_number or product.name) | urlencode }}{% if brand %}&brand={{ brand.name | urlencode }}{% endif %}" class="bg-white text-primary font-semibold py-3 px-6 rounded-lg hover:bg-gray-100 transition">Request Quote</a>
@@ -282,9 +281,12 @@
             if (counter) counter.textContent = (current + 1) + ' / ' + total;
         }
 
-        thumbs.forEach((btn, i) => btn.addEventListener('click', () => show(i)));
-        prev && prev.addEventListener('click', () => show(current - 1));
-        next && next.addEventListener('click', () => show(current + 1));
+        thumbs.forEach((btn, i) => btn.addEventListener('click', (e) => { e.preventDefault(); show(i); }));
+        prev && prev.addEventListener('click', (e) => { e.preventDefault(); show(current - 1); });
+        next && next.addEventListener('click', (e) => { e.preventDefault(); show(current + 1); });
+
+        // Sync hero with first thumb (needed when primary image is empty but gallery exists).
+        show(0);
 
         // Keyboard arrows when the gallery has focus or no input is focused.
         document.addEventListener('keydown', (e) => {
