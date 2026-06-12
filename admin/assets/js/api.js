@@ -6,6 +6,47 @@
 const API_BASE = '/api';
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
+function formatApiDetail(data, fallback) {
+    const detail = data && (data.detail ?? data.message);
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) {
+        return detail.map((item) => item.msg || JSON.stringify(item)).join('; ');
+    }
+    if (detail && typeof detail === 'object') {
+        return detail.msg || JSON.stringify(detail);
+    }
+    return fallback;
+}
+
+async function uploadMultipart(endpoint, file) {
+    const token = getCsrfToken();
+    if (!token) {
+        throw new Error('Security token missing. Hard refresh the page (Ctrl+Shift+R) and try again.');
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'X-CSRF-Token': token },
+        body: formData,
+    });
+
+    if (response.status === 401) {
+        clearCachedUser();
+        if (typeof redirectToLogin === 'function') redirectToLogin();
+        throw new Error('Session expired. Please sign in again.');
+    }
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(formatApiDetail(error, `Upload failed (HTTP ${response.status})`));
+    }
+    return response.json();
+}
+
 async function apiRequest(endpoint, options = {}) {
     const method = (options.method || 'GET').toUpperCase();
     const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
@@ -109,6 +150,8 @@ const productsAPI = {
     delete: (id) => apiRequest(`/products/${id}`, { method: 'DELETE' }),
     bulk: (ids, action) => apiRequest('/products/bulk', { method: 'POST', body: JSON.stringify({ ids, action }) }),
     validation: () => apiRequest('/products/validation'),
+    getListPosition: (id, params = {}) =>
+        apiRequest(`/products/${id}/list-position${buildQuery({ limit: 25, ...params })}`),
     checkPartNumber: (partNumber, excludeId = null) =>
         apiRequest(
             `/products/check-part-number${buildQuery({
@@ -131,36 +174,14 @@ const auditAPI = {
 };
 
 const uploadAPI = {
-    uploadImage: async (file, folder) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        const headers = {};
-        const token = getCsrfToken();
-        if (token) headers['X-CSRF-Token'] = token;
-
-        const response = await fetch(`${API_BASE}/upload/image/${folder}`, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers,
-            body: formData,
-        });
-        if (response.status === 401) {
-            clearCachedUser();
-            redirectToLogin();
-            throw new Error('Session expired. Please sign in again.');
-        }
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({}));
-            throw new Error(error.detail || 'Upload failed');
-        }
-        return response.json();
-    },
+    uploadImage: (file, folder) => uploadMultipart(`/upload/image/${folder}`, file),
     uploadImageFromUrl: async (url, folder) => {
         return apiRequest(`/upload/image-from-url/${folder}`, {
             method: 'POST',
             body: JSON.stringify({ url }),
         });
     },
+    uploadDocument: (file, folder) => uploadMultipart(`/upload/document/${folder}`, file),
 };
 
 const importAPI = {

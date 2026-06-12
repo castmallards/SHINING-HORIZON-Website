@@ -174,24 +174,29 @@
             try {
                 const v = await productsAPI.validation();
                 const cards = [
-                    ['Published products', v.published_total, ''],
-                    ['Missing image', v.missing_image, v.missing_image ? 'warn' : ''],
-                    ['Missing meta', v.missing_meta, v.missing_meta ? 'warn' : ''],
-                    ['Missing specs', v.missing_specs, v.missing_specs ? 'warn' : ''],
-                    ['Missing description', v.missing_description, v.missing_description ? 'warn' : ''],
-                    ['Missing brand', v.missing_brand, v.missing_brand ? 'warn' : ''],
+                    ['Published products', v.published_total, '', null],
+                    ['Missing image', v.missing_image, v.missing_image ? 'warn' : '', 'missing_image'],
+                    ['Missing meta', v.missing_meta, v.missing_meta ? 'warn' : '', 'missing_meta'],
+                    ['Missing specs', v.missing_specs, v.missing_specs ? 'warn' : '', 'missing_specs'],
+                    ['Missing description', v.missing_description, v.missing_description ? 'warn' : '', 'missing_description'],
+                    ['Missing brand', v.missing_brand, v.missing_brand ? 'warn' : '', 'missing_brand'],
                 ];
                 let html = '<div class="validation-grid">';
-                cards.forEach(([label, num, klass]) => {
-                    html += `<div class="validation-card ${klass}"><div class="num">${(num || 0).toLocaleString()}</div><div class="label">${label}</div></div>`;
+                cards.forEach(([label, num, klass, gap]) => {
+                    const inner = `<div class="validation-card ${klass}"><div class="num">${(num || 0).toLocaleString()}</div><div class="label">${label}</div></div>`;
+                    if (gap && num > 0) {
+                        html += `<a class="validation-card-link" href="products.html?gap=${gap}&status=published">${inner}</a>`;
+                    } else {
+                        html += inner;
+                    }
                 });
                 html += '</div>';
                 if (v.samples_missing_image && v.samples_missing_image.length) {
-                    html += '<div class="form-section"><h4>First 10 published products missing an image</h4><ul style="margin:0; padding-left: 18px;">';
+                    html += '<div class="form-section"><h4>Sample products missing an image</h4><ul style="margin:0; padding-left: 18px;">';
                     v.samples_missing_image.forEach(p => {
-                        html += `<li><a href="products.html?focus=${p.id}">${escapeHtml(p.name)}</a> ${p.part_number ? `<small style="color:#64748b">(${escapeHtml(p.part_number)})</small>` : ''}</li>`;
+                        html += `<li><a href="products.html?focus=${p.id}&gap=missing_image&status=published">${escapeHtml(p.name)}</a> ${p.part_number ? `<small style="color:#64748b">(${escapeHtml(p.part_number)})</small>` : ''}</li>`;
                     });
-                    html += '</ul></div>';
+                    html += '</ul><p style="margin:8px 0 0; font-size:0.8125rem;"><a href="products.html?gap=missing_image&status=published">View all with this issue →</a></p></div>';
                 }
                 el.innerHTML = html;
             } catch (e) {

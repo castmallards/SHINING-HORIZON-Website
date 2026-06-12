@@ -608,6 +608,55 @@ tr:hover {
     display: none;
 }
 
+.pdf-upload {
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.pdf-upload:hover {
+    border-color: var(--primary);
+}
+
+.pdf-upload.is-drag-over {
+    border-color: var(--primary);
+    background: #f0f9ff;
+}
+
+.pdf-upload input {
+    display: none;
+}
+
+.pdf-upload p {
+    margin: 8px 0 0;
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
+.datasheet-or-divider {
+    margin: 4px 0 12px;
+    color: #94a3b8;
+    font-size: 0.8125rem;
+    text-align: center;
+}
+
+.datasheet-file-preview {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.datasheet-file-name {
+    font-size: 0.875rem;
+    color: #334155;
+    font-weight: 500;
+}
+
 /* Must beat .modal { max-width: 600px; width: 90% } — product form needs room for selects + quick-add */
 #product-modal > .modal.modal-wide,
 .modal.modal-wide {
@@ -899,6 +948,61 @@ tr:hover {
 .validation-card .label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 4px; }
 .validation-card.warn .num { color: #b45309; }
 .validation-card.danger .num { color: #b91c1c; }
+
+a.validation-card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+a.validation-card-link:hover .validation-card {
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(45, 139, 201, 0.12);
+}
+
+.gap-filter-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    color: #92400e;
+}
+
+.gap-filter-banner.hidden { display: none; }
+
+tr.row-focused {
+    background: #eff6ff !important;
+    box-shadow: inset 0 0 0 2px var(--primary);
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.pagination-page-size {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8125rem;
+    color: #64748b;
+}
+
+.pagination-page-size select {
+    padding: 6px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+}
 
 /* Audit log table */
 .audit-changes { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.75rem; color: #475569; max-width: 360px; overflow-wrap: anywhere; }

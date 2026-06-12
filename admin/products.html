@@ -61,17 +61,30 @@
                         <select id="filter-category" class="filter-select" onchange="onCategoryChange()">
                             <option value="">All Categories</option>
                         </select>
-                        <select id="filter-subcategory" class="filter-select" onchange="reload()">
+                        <select id="filter-subcategory" class="filter-select" onchange="pageSkip = 0; reload()">
                             <option value="">All Subcategories</option>
                         </select>
-                        <select id="filter-brand" class="filter-select" onchange="reload()">
+                        <select id="filter-brand" class="filter-select" onchange="pageSkip = 0; reload()">
                             <option value="">All Brands</option>
                         </select>
-                        <select id="filter-status" class="filter-select" onchange="reload()">
+                        <select id="filter-status" class="filter-select" onchange="pageSkip = 0; reload()">
                             <option value="">All Statuses</option>
                             <option value="published">Published</option>
                             <option value="draft">Draft</option>
                         </select>
+                        <select id="filter-gap" class="filter-select" title="Filter by missing catalog data" onchange="onGapFilterChange()">
+                            <option value="">All data quality</option>
+                            <option value="missing_image">Missing image</option>
+                            <option value="missing_meta">Missing meta</option>
+                            <option value="missing_specs">Missing specs</option>
+                            <option value="missing_description">Missing description</option>
+                            <option value="missing_brand">Missing brand</option>
+                        </select>
+                    </div>
+
+                    <div id="gap-filter-banner" class="gap-filter-banner hidden" role="status">
+                        <span id="gap-filter-text"></span>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="clearGapFilter()">Show all products</button>
                     </div>
 
                     <!-- Bulk actions bar (Phase 4.15) -->
@@ -103,10 +116,20 @@
                     </div>
 
                     <!-- Pagination (Phase 4.14) -->
-                    <div id="pagination" style="display:flex; align-items:center; justify-content:space-between; margin-top:14px;">
+                    <div id="pagination" style="display:flex; align-items:center; justify-content:space-between; margin-top:14px; flex-wrap:wrap; gap:10px;">
                         <small id="pagination-info" style="color:#64748b;"></small>
-                        <div style="display:flex; gap: 6px;">
+                        <div class="pagination-controls">
+                            <label class="pagination-page-size">
+                                Per page
+                                <select id="page-size" onchange="onPageSizeChange()">
+                                    <option value="10">10</option>
+                                    <option value="25" selected>25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </label>
                             <button class="btn btn-sm btn-secondary" id="pg-prev" onclick="goPage(-1)">Previous</button>
+                            <span id="pagination-page" style="font-size:0.8125rem; color:#64748b; min-width:5rem; text-align:center;"></span>
                             <button class="btn btn-sm btn-secondary" id="pg-next" onclick="goPage(1)">Next</button>
                         </div>
                     </div>
@@ -212,9 +235,27 @@
 
                     <div class="form-section">
                         <h4>Datasheet</h4>
-                        <div class="form-group">
-                            <label class="form-label">Datasheet URL (PDF or external link)</label>
-                            <input type="url" name="datasheet_url" class="form-input" placeholder="https://…">
+                        <input type="hidden" name="datasheet_url" id="datasheet-url-value" value="">
+                        <div id="datasheet-url-row" class="form-group">
+                            <label class="form-label">External link</label>
+                            <input type="url" id="datasheet-url-input" class="form-input" placeholder="https://manufacturer.com/datasheet.pdf" oninput="onDatasheetUrlInput()">
+                            <p class="form-hint">Manufacturer or supplier PDF link, if you have one.</p>
+                        </div>
+                        <p class="datasheet-or-divider" id="datasheet-or-divider">or</p>
+                        <div class="form-group" id="datasheet-upload-group">
+                            <label class="form-label">Upload PDF</label>
+                            <div class="pdf-upload" id="datasheet-upload-zone" tabindex="0" title="Click to browse or drag a PDF here" onclick="if (!event.target.closest('.datasheet-file-preview')) document.getElementById('datasheet-file-input').click()">
+                                <input type="file" id="datasheet-file-input" accept=".pdf,application/pdf">
+                                <div id="datasheet-upload-prompt">
+                                    <svg width="32" height="32" fill="none" stroke="#9ca3af" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    <p>Click or drag a PDF datasheet here</p>
+                                </div>
+                                <div id="datasheet-file-preview" class="datasheet-file-preview hidden">
+                                    <span id="datasheet-file-name" class="datasheet-file-name"></span>
+                                    <a id="datasheet-file-link" href="#" target="_blank" rel="noopener" class="btn btn-sm btn-secondary">View PDF</a>
+                                    <button type="button" class="btn btn-sm btn-secondary" onclick="clearDatasheetFile(event)">Remove</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -256,7 +297,7 @@
     <div id="toast-container" class="toast-container"></div>
 
     <script src="assets/js/auth.js"></script>
-    <script src="assets/js/api.js"></script>
+    <script src="assets/js/api.js?v=5"></script>
     <script src="assets/js/utils.js"></script>
     <script src="assets/js/image-drop.js?v=4"></script>
     <script src="assets/js/quick-add.js"></script>
@@ -277,13 +318,127 @@
         let galleryWidget = null;
         let specsWidget = null;
         let selectedIds = new Set();
+        let activeGap = '';
+        let pendingFocusId = null;
+
+        const GAP_LABELS = {
+            missing_image: 'missing a primary image and gallery',
+            missing_meta: 'missing SEO meta title or description',
+            missing_specs: 'missing specifications',
+            missing_description: 'missing full description',
+            missing_brand: 'missing a brand',
+        };
 
         const search = debounce(() => { pageSkip = 0; reload(); }, 300);
+
+        function syncGapToUrl() {
+            const params = new URLSearchParams(window.location.search);
+            if (activeGap) params.set('gap', activeGap);
+            else params.delete('gap');
+            const qs = params.toString();
+            history.replaceState({}, '', qs ? `products.html?${qs}` : 'products.html');
+        }
+
+        function syncGapFilterUI() {
+            const gapSelect = document.getElementById('filter-gap');
+            if (gapSelect) gapSelect.value = activeGap || '';
+            updateGapBanner();
+        }
+
+        function readUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            activeGap = params.get('gap') || '';
+            const status = params.get('status');
+            if (status) document.getElementById('filter-status').value = status;
+            const focus = params.get('focus');
+            pendingFocusId = focus ? parseInt(focus, 10) : null;
+            if (pendingFocusId && Number.isNaN(pendingFocusId)) pendingFocusId = null;
+            syncGapFilterUI();
+        }
+
+        function onGapFilterChange() {
+            activeGap = document.getElementById('filter-gap').value || '';
+            pageSkip = 0;
+            syncGapToUrl();
+            syncGapFilterUI();
+            reload();
+        }
+
+        function listQueryParams() {
+            return {
+                category_id: document.getElementById('filter-category').value || null,
+                subcategory_id: document.getElementById('filter-subcategory').value || null,
+                brand_id: document.getElementById('filter-brand').value || null,
+                status: document.getElementById('filter-status').value || null,
+                search: document.getElementById('filter-search').value || null,
+                gap: activeGap || null,
+            };
+        }
+
+        function updateGapBanner() {
+            const banner = document.getElementById('gap-filter-banner');
+            const text = document.getElementById('gap-filter-text');
+            if (!activeGap) {
+                banner.classList.add('hidden');
+                return;
+            }
+            const label = GAP_LABELS[activeGap] || activeGap.replace(/_/g, ' ');
+            const status = document.getElementById('filter-status').value;
+            text.textContent = status === 'published'
+                ? `Showing published products ${label}.`
+                : `Showing products ${label}.`;
+            banner.classList.remove('hidden');
+        }
+
+        function clearGapFilter() {
+            activeGap = '';
+            pageSkip = 0;
+            syncGapToUrl();
+            syncGapFilterUI();
+            reload();
+        }
+
+        function onPageSizeChange() {
+            pageSize = parseInt(document.getElementById('page-size').value, 10) || 25;
+            localStorage.setItem('products-page-size', String(pageSize));
+            pageSkip = 0;
+            reload();
+        }
+
+        function highlightProductRow(productId) {
+            document.querySelectorAll('tr.row-focused').forEach((row) => row.classList.remove('row-focused'));
+            const row = document.querySelector(`tr[data-product-id="${productId}"]`);
+            if (row) {
+                row.classList.add('row-focused');
+                row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+
+        async function goToProductPage(productId) {
+            try {
+                const pos = await productsAPI.getListPosition(productId, {
+                    ...listQueryParams(),
+                    limit: pageSize,
+                });
+                pageSkip = pos.skip;
+                await reload();
+                highlightProductRow(productId);
+            } catch (e) {
+                showToast(e.message, 'error');
+                await reload();
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', async () => {
             initUserInfo();
             applyRoleGates();
             renderBlankPreview();
+            readUrlParams();
+            const savedPageSize = localStorage.getItem('products-page-size');
+            if (savedPageSize) {
+                pageSize = parseInt(savedPageSize, 10) || 25;
+                document.getElementById('page-size').value = String(pageSize);
+            }
             document.getElementById('filter-search').addEventListener('input', search);
             QuickAdd.init({
                 mode: 'product',
@@ -311,7 +466,17 @@
                     onFiles: (files) => uploadPrimaryProductImage(files[0]),
                 });
             }
-            await reload();
+            wireDatasheetPdfUpload();
+            if (pendingFocusId) {
+                await goToProductPage(pendingFocusId);
+                const params = new URLSearchParams(window.location.search);
+                params.delete('focus');
+                const qs = params.toString();
+                history.replaceState({}, '', qs ? `products.html?${qs}` : 'products.html');
+                pendingFocusId = null;
+            } else {
+                await reload();
+            }
         });
 
         function blankPreview() {
@@ -339,6 +504,155 @@
             document.getElementById('image-path').value = '';
             document.getElementById('image-url-import').value = '';
             renderPrimaryImagePreview('');
+        }
+
+        function isUploadedDatasheet(value) {
+            if (!value || typeof value !== 'string') return false;
+            const path = value.trim();
+            return /^\/uploads\/products\/documents\/.+\.pdf$/i.test(path)
+                || /^uploads\/products\/documents\/.+\.pdf$/i.test(path);
+        }
+
+        function normalizeDatasheetPath(value) {
+            if (!value) return '';
+            const path = value.trim();
+            if (path.startsWith('/uploads/')) return path;
+            if (path.startsWith('uploads/')) return `/${path}`;
+            return path;
+        }
+
+        function datasheetDisplayName(path) {
+            const base = (path || '').split('/').pop() || 'datasheet.pdf';
+            return base.replace(/^[a-f0-9]{32}\.pdf$/i, 'Uploaded datasheet.pdf');
+        }
+
+        function datasheetUploadPromptHtml() {
+            return '<svg width="32" height="32" fill="none" stroke="#9ca3af" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><p>Click or drag a PDF datasheet here</p>';
+        }
+
+        function syncDatasheetFormValue() {
+            const hidden = document.getElementById('datasheet-url-value');
+            const urlInput = document.getElementById('datasheet-url-input');
+            const preview = document.getElementById('datasheet-file-preview');
+            if (!hidden) return;
+            if (preview && !preview.classList.contains('hidden')) {
+                hidden.value = hidden.dataset.uploadedPath || '';
+            } else {
+                hidden.value = (urlInput?.value || '').trim();
+            }
+        }
+
+        function setDatasheetUi(value) {
+            const hidden = document.getElementById('datasheet-url-value');
+            const urlInput = document.getElementById('datasheet-url-input');
+            const urlRow = document.getElementById('datasheet-url-row');
+            const divider = document.getElementById('datasheet-or-divider');
+            const uploadGroup = document.getElementById('datasheet-upload-group');
+            const prompt = document.getElementById('datasheet-upload-prompt');
+            const preview = document.getElementById('datasheet-file-preview');
+            const fileName = document.getElementById('datasheet-file-name');
+            const fileLink = document.getElementById('datasheet-file-link');
+            const fileInput = document.getElementById('datasheet-file-input');
+            const raw = value || '';
+            const uploaded = isUploadedDatasheet(raw);
+
+            hidden.value = raw;
+            delete hidden.dataset.uploadedPath;
+            if (fileInput) fileInput.value = '';
+
+            if (uploaded) {
+                const path = normalizeDatasheetPath(raw);
+                hidden.dataset.uploadedPath = path;
+                hidden.value = path;
+                urlInput.value = '';
+                urlRow.classList.add('hidden');
+                divider.classList.add('hidden');
+                uploadGroup.classList.remove('hidden');
+                prompt.classList.add('hidden');
+                preview.classList.remove('hidden');
+                fileName.textContent = datasheetDisplayName(path);
+                fileLink.href = path;
+            } else {
+                urlInput.value = raw;
+                urlRow.classList.remove('hidden');
+                divider.classList.remove('hidden');
+                uploadGroup.classList.remove('hidden');
+                if (prompt) {
+                    prompt.innerHTML = datasheetUploadPromptHtml();
+                    prompt.classList.remove('hidden');
+                }
+                preview.classList.add('hidden');
+            }
+        }
+
+        function onDatasheetUrlInput() {
+            const preview = document.getElementById('datasheet-file-preview');
+            if (preview && !preview.classList.contains('hidden')) return;
+            syncDatasheetFormValue();
+        }
+
+        function clearDatasheetFile(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            setDatasheetUi('');
+        }
+
+        function wireDatasheetPdfUpload() {
+            const zone = document.getElementById('datasheet-upload-zone');
+            const input = document.getElementById('datasheet-file-input');
+            if (!zone || !input) return;
+
+            input.addEventListener('change', () => {
+                const file = input.files && input.files[0];
+                if (file) uploadDatasheetPdf(file);
+            });
+
+            ['dragenter', 'dragover'].forEach((evt) => {
+                zone.addEventListener(evt, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    zone.classList.add('is-drag-over');
+                });
+            });
+            zone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                zone.classList.remove('is-drag-over');
+            });
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                zone.classList.remove('is-drag-over');
+                const file = e.dataTransfer?.files?.[0];
+                if (file) uploadDatasheetPdf(file);
+            });
+        }
+
+        async function uploadDatasheetPdf(file) {
+            if (!file) return;
+            if (!uploadAPI.uploadDocument) {
+                showToast('PDF upload is unavailable. Hard refresh the page (Ctrl+Shift+R).', 'error');
+                return;
+            }
+            const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
+            if (!isPdf) {
+                showToast('Please choose a PDF file.', 'error');
+                return;
+            }
+            const prompt = document.getElementById('datasheet-upload-prompt');
+            const preview = document.getElementById('datasheet-file-preview');
+            if (prompt) prompt.innerHTML = '<div class="spinner"></div><p>Uploading PDF…</p>';
+            if (preview) preview.classList.add('hidden');
+            try {
+                const result = await uploadAPI.uploadDocument(file, 'products');
+                setDatasheetUi(result.url || result.path);
+                showToast('Datasheet uploaded');
+            } catch (error) {
+                setDatasheetUi(document.getElementById('datasheet-url-value').value || '');
+                showToast(error.message || 'Upload failed', 'error');
+            }
         }
 
         async function loadCategories() {
@@ -404,11 +718,7 @@
 
         async function reload() {
             const params = {
-                category_id: document.getElementById('filter-category').value || null,
-                subcategory_id: document.getElementById('filter-subcategory').value || null,
-                brand_id: document.getElementById('filter-brand').value || null,
-                status: document.getElementById('filter-status').value || null,
-                search: document.getElementById('filter-search').value || null,
+                ...listQueryParams(),
                 skip: pageSkip,
                 limit: pageSize,
             };
@@ -433,7 +743,7 @@
                 return;
             }
             tbody.innerHTML = products.map(p => `
-                <tr>
+                <tr data-product-id="${p.id}">
                     <td><input type="checkbox" class="row-check" data-id="${p.id}" ${selectedIds.has(p.id) ? 'checked' : ''} onchange="toggleRow(${p.id}, this.checked)"></td>
                     <td>
                         ${p.image
@@ -464,11 +774,15 @@
 
         function renderPagination() {
             const info = document.getElementById('pagination-info');
+            const pageEl = document.getElementById('pagination-page');
             const prev = document.getElementById('pg-prev');
             const next = document.getElementById('pg-next');
             const start = totalProducts ? pageSkip + 1 : 0;
             const end = Math.min(pageSkip + pageSize, totalProducts);
+            const totalPages = totalProducts ? Math.ceil(totalProducts / pageSize) : 1;
+            const currentPage = totalProducts ? Math.floor(pageSkip / pageSize) + 1 : 1;
             info.textContent = totalProducts ? `Showing ${start.toLocaleString()}–${end.toLocaleString()} of ${totalProducts.toLocaleString()}` : '';
+            pageEl.textContent = totalProducts ? `Page ${currentPage} of ${totalPages}` : '';
             prev.disabled = pageSkip <= 0;
             next.disabled = end >= totalProducts;
         }
@@ -582,6 +896,7 @@
             document.getElementById('gallery-input').value = '[]';
             document.getElementById('specs-input').value = '[]';
             document.getElementById('product-description').value = '';
+            setDatasheetUi('');
             ensureWidgetsMounted();
             galleryWidget && galleryWidget.setValue([]);
             specsWidget && specsWidget.setValue([]);
@@ -619,8 +934,8 @@
                 status: p.status,
                 meta_title: p.meta_title,
                 meta_description: p.meta_description,
-                datasheet_url: p.datasheet_url,
             });
+            setDatasheetUi(p.datasheet_url || '');
 
             ensureWidgetsMounted();
             RichEditor.setValue('product-description', p.description || '');
@@ -641,6 +956,7 @@
                 return;
             }
             const id = document.getElementById('product-id').value;
+            syncDatasheetFormValue();
             const data = getFormData('product-form');
             delete data.id;
             if (!data.category_id) delete data.category_id;
@@ -672,12 +988,18 @@
                 if (id) {
                     await productsAPI.update(id, data);
                     showToast('Product updated');
+                    closeModal('product-modal');
+                    await reload();
+                    highlightProductRow(Number(id));
                 } else {
-                    await productsAPI.create(data);
+                    const created = await productsAPI.create(data);
                     showToast('Product created');
+                    closeModal('product-modal');
+                    activeGap = '';
+                    syncGapFilterUI();
+                    syncGapToUrl();
+                    await goToProductPage(created.id);
                 }
-                closeModal('product-modal');
-                await reload();
             } catch (error) {
                 showToast(error.message, 'error');
             }
