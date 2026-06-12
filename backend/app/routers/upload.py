@@ -18,6 +18,13 @@ from pydantic import BaseModel, Field, HttpUrl
 from ..config import settings
 from ..models.user import User
 from ..services.auth import get_current_user
+from ..services.document import (
+    ALLOWED_DOCUMENT_EXTS,
+    MAX_DOCUMENT_SIZE,
+    VALID_DOCUMENT_FOLDERS,
+    DocumentProcessingError,
+    process_document_upload,
+)
 from ..services.image import (
     ALLOWED_EXTS,
     VALID_FOLDERS,
@@ -183,6 +190,71 @@ async def upload_image_from_url(
         "url": stored.original_url,
         "is_svg": stored.is_svg,
     }
+
+
+@router.post("/document/{folder}")
+async def upload_document(
+    folder: str,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    """Upload a PDF datasheet. Stored path is suitable for ``product.datasheet_url``."""
+    if folder not in VALID_DOCUMENT_FOLDERS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid folder. Must be one of: {sorted(VALID_DOCUMENT_FOLDERS)}",
+        )
+
+    if not file.filename or "." not in file.filename:
+        raise HTTPException(status_code=400, detail="Filename is missing an extension")
+
+    ext = file.filename.rsplit(".", 1)[-1].lower()
+    if ext not in ALLOWED_DOCUMENT_EXTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type. Allowed: {sorted(ALLOWED_DOCUMENT_EXTS)}",
+        )
+
+    content = await file.read()
+    if len(content) > MAX_DOCUMENT_SIZE:
+        raise HTTPException(status_code=400, detail="File too large. Max size: 20MB")
+    if not content:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+    try:
+        stored = process_document_upload(folder, file.filename, content)
+    except DocumentProcessingError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    return {"path": stored.path, "url": stored.url}
+
+
+@router.delete("/document")
+async def delete_document(
+    path: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Remove an uploaded PDF from disk."""
+    normalised = path.strip().removeprefix("/").removeprefix("backend/")
+    parts = normalised.split("/")
+    if (
+        len(parts) < 4
+        or parts[0] != "uploads"
+        or parts[1] not in VALID_DOCUMENT_FOLDERS
+        or parts[2] != "documents"
+    ):
+        raise HTTPException(status_code=400, detail="Invalid path")
+
+    filename = parts[-1]
+    if not filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Invalid path")
+
+    abs_path = os.path.join(settings.UPLOAD_DIR, *parts[1:])
+    if not os.path.isfile(abs_path):
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    os.remove(abs_path)
+    return {"message": "Document deleted successfully"}
 
 
 @router.delete("/image")

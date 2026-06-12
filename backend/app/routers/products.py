@@ -1,10 +1,10 @@
 """Product CRUD + bulk + pagination/search (Phases 4.14, 4.15, 4.16)."""
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
-from sqlalchemy import or_
-from sqlalchemy.orm import Session
+from sqlalchemy import and_, or_
+from sqlalchemy.orm import Query as SqlQuery, Session
 
 from ..database import get_db
 from ..models._common import AuditAction, ContentStatus
@@ -21,9 +21,101 @@ from ..cache import invalidate_public
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
+CatalogGap = Literal[
+    "missing_image",
+    "missing_meta",
+    "missing_specs",
+    "missing_description",
+    "missing_brand",
+]
+
+_VALID_GAPS = {
+    "missing_image",
+    "missing_meta",
+    "missing_specs",
+    "missing_description",
+    "missing_brand",
+}
+
+_PRODUCT_LIST_ORDER = (Product.display_order, Product.id)
+
 
 def _client_ip(request: Request) -> Optional[str]:
     return request.client.host if request.client else None
+
+
+def _apply_gap_filter(query: SqlQuery, gap: str) -> SqlQuery:
+    if gap not in _VALID_GAPS:
+        raise HTTPException(status_code=400, detail=f"Invalid gap. Must be one of: {sorted(_VALID_GAPS)}")
+    if gap == "missing_image":
+        return query.filter(
+            or_(Product.image == None, Product.image == ""),  # noqa: E711
+            or_(Product.gallery == None, Product.gallery == "", Product.gallery == "[]"),  # noqa: E711
+        )
+    if gap == "missing_meta":
+        return query.filter(
+            or_(
+                Product.meta_title == None,  # noqa: E711
+                Product.meta_title == "",
+                Product.meta_description == None,  # noqa: E711
+                Product.meta_description == "",
+            )
+        )
+    if gap == "missing_specs":
+        return query.filter(
+            or_(Product.specifications == None, Product.specifications == "[]", Product.specifications == "")  # noqa: E711
+        )
+    if gap == "missing_description":
+        return query.filter(or_(Product.description == None, Product.description == ""))  # noqa: E711
+    if gap == "missing_brand":
+        return query.filter(Product.brand_id == None)  # noqa: E711
+    return query
+
+
+def _build_products_query(
+    db: Session,
+    *,
+    category_id: Optional[int] = None,
+    subcategory_id: Optional[int] = None,
+    brand_id: Optional[int] = None,
+    status: Optional[ContentStatus] = None,
+    search: Optional[str] = None,
+    include_inactive: bool = True,
+    gap: Optional[str] = None,
+) -> SqlQuery:
+    query = db.query(Product)
+    if category_id:
+        query = query.filter(Product.category_id == category_id)
+    if subcategory_id:
+        query = query.filter(Product.subcategory_id == subcategory_id)
+    if brand_id:
+        query = query.filter(Product.brand_id == brand_id)
+    if status is not None:
+        query = query.filter(Product.status == status)
+    if not include_inactive:
+        query = query.filter(Product.is_active == True)  # noqa: E712
+    if search:
+        like = f"%{search.strip()}%"
+        query = query.outerjoin(Brand, Product.brand_id == Brand.id).filter(
+            or_(
+                Product.name.ilike(like),
+                Product.part_number.ilike(like),
+                Product.slug.ilike(like),
+                Product.short_description.ilike(like),
+                Product.description.ilike(like),
+                Brand.name.ilike(like),
+            )
+        )
+    if gap:
+        query = _apply_gap_filter(query, gap)
+    return query
+
+
+def _products_before_filter(product: Product) -> SqlQuery:
+    return or_(
+        Product.display_order < product.display_order,
+        and_(Product.display_order == product.display_order, Product.id < product.id),
+    )
 
 
 # ─── Static-path routes registered first so they aren't shadowed by /{id} ──
@@ -136,17 +228,14 @@ def validate_catalog(
 ):
     """Surface gaps in published catalog data (Phase 4.16)."""
     pub = db.query(Product).filter(Product.status == ContentStatus.PUBLISHED)
-    missing_image = pub.filter((Product.image == None) | (Product.image == "")).count()  # noqa: E711
-    missing_meta = pub.filter(
-        ((Product.meta_title == None) | (Product.meta_title == ""))  # noqa: E711
-        | ((Product.meta_description == None) | (Product.meta_description == ""))  # noqa: E711
-    ).count()
-    missing_specs = pub.filter((Product.specifications == None) | (Product.specifications == "[]") | (Product.specifications == "")).count()  # noqa: E711
-    missing_description = pub.filter((Product.description == None) | (Product.description == "")).count()  # noqa: E711
-    missing_brand = pub.filter(Product.brand_id == None).count()  # noqa: E711
+    missing_image = _apply_gap_filter(pub, "missing_image").count()
+    missing_meta = _apply_gap_filter(pub, "missing_meta").count()
+    missing_specs = _apply_gap_filter(pub, "missing_specs").count()
+    missing_description = _apply_gap_filter(pub, "missing_description").count()
+    missing_brand = _apply_gap_filter(pub, "missing_brand").count()
 
     samples = (
-        pub.filter((Product.image == None) | (Product.image == ""))  # noqa: E711
+        _apply_gap_filter(pub, "missing_image")
         .order_by(Product.id)
         .limit(10)
         .all()
@@ -176,6 +265,10 @@ def get_products(
     brand_id: Optional[int] = Query(None),
     status: Optional[ContentStatus] = Query(None, description="Filter by publish status"),
     search: Optional[str] = Query(None, description="Match name, part number, or slug (case-insensitive)"),
+    gap: Optional[CatalogGap] = Query(
+        None,
+        description="Catalog quality filter (missing_image, missing_meta, etc.)",
+    ),
     include_inactive: bool = Query(True, description="Include is_active=false rows"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=500),
@@ -183,35 +276,76 @@ def get_products(
     current_user: User = Depends(get_current_user),
 ):
     """List products. Returns ``{items, total, skip, limit}``."""
-    query = db.query(Product)
-    if category_id:
-        query = query.filter(Product.category_id == category_id)
-    if subcategory_id:
-        query = query.filter(Product.subcategory_id == subcategory_id)
-    if brand_id:
-        query = query.filter(Product.brand_id == brand_id)
-    if status is not None:
-        query = query.filter(Product.status == status)
-    if not include_inactive:
-        query = query.filter(Product.is_active == True)  # noqa: E712
-    if search:
-        like = f"%{search.strip()}%"
-        query = query.outerjoin(Brand, Product.brand_id == Brand.id).filter(or_(
-            Product.name.ilike(like),
-            Product.part_number.ilike(like),
-            Product.slug.ilike(like),
-            Product.short_description.ilike(like),
-            Product.description.ilike(like),
-            Brand.name.ilike(like),
-        ))
+    query = _build_products_query(
+        db,
+        category_id=category_id,
+        subcategory_id=subcategory_id,
+        brand_id=brand_id,
+        status=status,
+        search=search,
+        include_inactive=include_inactive,
+        gap=gap,
+    )
 
     total = query.count()
-    rows = query.order_by(Product.display_order, Product.id).offset(skip).limit(limit).all()
+    rows = query.order_by(*_PRODUCT_LIST_ORDER).offset(skip).limit(limit).all()
     items = [ProductService.get_with_relations(db, p) for p in rows]
     return {"items": items, "total": total, "skip": skip, "limit": limit}
 
 
 # ─── Per-id routes registered last ──────────────────────────────────────
+
+@router.get("/{product_id}/list-position")
+def get_product_list_position(
+    product_id: int,
+    category_id: Optional[int] = Query(None),
+    subcategory_id: Optional[int] = Query(None),
+    brand_id: Optional[int] = Query(None),
+    status: Optional[ContentStatus] = Query(None),
+    search: Optional[str] = Query(None),
+    gap: Optional[CatalogGap] = Query(None),
+    include_inactive: bool = Query(True),
+    limit: int = Query(25, ge=1, le=500),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Return pagination skip/page for a product using the same filters and sort as the list."""
+    product = ProductService.get_by_id(db, product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    query = _build_products_query(
+        db,
+        category_id=category_id,
+        subcategory_id=subcategory_id,
+        brand_id=brand_id,
+        status=status,
+        search=search,
+        include_inactive=include_inactive,
+        gap=gap,
+    )
+    if not query.filter(Product.id == product_id).count():
+        raise HTTPException(status_code=404, detail="Product not found for current filters")
+
+    total = query.count()
+    position = query.filter(_products_before_filter(product)).count()
+    if position >= total and total > 0:
+        position = max(0, total - 1)
+
+    skip = (position // limit) * limit
+    page = (position // limit) + 1 if total else 1
+    total_pages = max(1, (total + limit - 1) // limit) if total else 1
+
+    return {
+        "product_id": product_id,
+        "skip": skip,
+        "limit": limit,
+        "page": page,
+        "total": total,
+        "total_pages": total_pages,
+        "index": position,
+    }
+
 
 @router.get("/{product_id}", response_model=ProductResponse)
 def get_product(
