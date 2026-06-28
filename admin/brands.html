@@ -373,6 +373,7 @@
         }
 
         async function uploadBrandLogo(file) {
+        async function uploadBrandLogo(file) {
             if (!file) return;
             const preview = document.getElementById('logo-preview');
             preview.innerHTML = '<div class="spinner"></div>';
@@ -385,6 +386,27 @@
                 preview.innerHTML = `<p style="color:#dc2626;">Upload failed: ${error.message}</p>`;
                 showToast('Upload failed', 'error');
             }
+        }
+
+        async function uploadBrandLogoFromUrl(url) {
+            if (!url) return;
+            const preview = document.getElementById('logo-preview');
+            preview.innerHTML = '<div class="spinner"></div>';
+            try {
+                const result = await uploadAPI.uploadImageFromUrl(url, 'brands');
+                document.getElementById('logo-path').value = result.path;
+                preview.innerHTML = `<img src="${adminImageUrl(result.path, 'card')}" style="max-width:100%; max-height:150px; border-radius:8px;">`;
+                showToast('Logo imported');
+            } catch (error) {
+                preview.innerHTML = `<p style="color:#dc2626;">Import failed: ${error.message}</p>`;
+                showToast('Import failed', 'error');
+            }
+        }
+
+        async function handleLogoUpload(input) {
+            const file = input.files?.[0];
+            if (file) await uploadBrandLogo(file);
+            input.value = '';
         }
 
         async function uploadBrandLogoFromUrl(url) {
