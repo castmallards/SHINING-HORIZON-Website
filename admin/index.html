@@ -134,21 +134,24 @@
 
         async function loadDashboardData() {
             try {
-                const [categories, productsResponse, brands, subcategories] = await Promise.all([
-                    categoriesAPI.getAll(),
+                const [catRes, productsResponse, brandRes, subRes] = await Promise.all([
+                    categoriesAPI.getAll({ limit: 500 }),
                     productsAPI.getAll({ limit: 1 }),
-                    brandsAPI.getAll(),
-                    subcategoriesAPI.getAll(),
+                    brandsAPI.getAll({ limit: 1 }),
+                    subcategoriesAPI.getAll(null, { limit: 1 }),
                 ]);
 
+                const categories = unwrapListResponse(catRes).items;
                 const productCount = productsResponse && typeof productsResponse.total === 'number'
                     ? productsResponse.total
-                    : (Array.isArray(productsResponse) ? productsResponse.length : 0);
+                    : unwrapListResponse(productsResponse).total;
+                const brandCount = unwrapListResponse(brandRes).total;
+                const subCount = unwrapListResponse(subRes).total;
 
-                document.getElementById('stat-categories').textContent = categories.length;
+                document.getElementById('stat-categories').textContent = unwrapListResponse(catRes).total.toLocaleString();
                 document.getElementById('stat-products').textContent = productCount.toLocaleString();
-                document.getElementById('stat-brands').textContent = brands.length;
-                document.getElementById('stat-subcategories').textContent = subcategories.length;
+                document.getElementById('stat-brands').textContent = brandCount.toLocaleString();
+                document.getElementById('stat-subcategories').textContent = subCount.toLocaleString();
 
                 const tbody = document.getElementById('recent-categories');
                 if (categories.length === 0) {

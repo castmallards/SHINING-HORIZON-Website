@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import Optional
 
 from ..database import get_db
 from ..models._common import ContentStatus
@@ -19,10 +19,12 @@ def _client_ip(request: Request) -> Optional[str]:
     return request.client.host if request.client else None
 
 
-@router.get("/", response_model=List[BrandResponse])
+@router.get("/")
 def get_brands(
     include_inactive: bool = Query(True),
     status: Optional[ContentStatus] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=500),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -31,8 +33,15 @@ def get_brands(
         query = query.filter(Brand.is_active == True)  # noqa: E712
     if status is not None:
         query = query.filter(Brand.status == status)
-    rows = query.order_by(Brand.display_order, Brand.name).all()
-    return [BrandService.get_with_counts(db, b) for b in rows]
+    total = query.count()
+    rows = (
+        query.order_by(Brand.display_order, Brand.name)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    items = [BrandService.get_with_counts(db, b) for b in rows]
+    return {"items": items, "total": total, "skip": skip, "limit": limit}
 
 
 @router.get("/{brand_id}", response_model=BrandResponse)

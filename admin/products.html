@@ -100,6 +100,7 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
+                                    <th class="col-row-num num">#</th>
                                     <th style="width:3%;"><input type="checkbox" id="select-all" onchange="toggleAll(this.checked)"></th>
                                     <th style="width:7%;">Image</th>
                                     <th style="width:22%;">Name / Part No.</th>
@@ -110,7 +111,7 @@
                                 </tr>
                             </thead>
                             <tbody id="products-table">
-                                <tr><td colspan="7"><div class="loading"><div class="spinner"></div></div></td></tr>
+                                <tr><td colspan="8"><div class="loading"><div class="spinner"></div></div></td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -203,6 +204,7 @@
 
                     <div class="form-group">
                         <label class="form-label">Full Description</label>
+                        <p style="color:#64748b; font-size:0.8125rem; margin: 0 0 8px;">Headings, lists, bold, links, and more.</p>
                         <textarea name="description" id="product-description" class="form-textarea"></textarea>
                         <div id="description-editor"></div>
                     </div>
@@ -656,7 +658,7 @@
         }
 
         async function loadCategories() {
-            categories = await categoriesAPI.getAll();
+            categories = unwrapListResponse(await categoriesAPI.getAll()).items;
             const filterSelect = document.getElementById('filter-category');
             filterSelect.innerHTML = '<option value="">All Categories</option>' +
                 categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
@@ -666,7 +668,7 @@
         }
 
         async function loadBrands() {
-            brands = await brandsAPI.getAll();
+            brands = unwrapListResponse(await brandsAPI.getAll()).items;
             const filterSelect = document.getElementById('filter-brand');
             filterSelect.innerHTML = '<option value="">All Brands</option>' +
                 brands.map(b => `<option value="${b.id}">${escapeHtml(b.name)}</option>`).join('');
@@ -681,7 +683,7 @@
             if (categoryId) {
                 const cat = categories.find(c => c.id == categoryId);
                 if (cat && cat.type === 'detailed') {
-                    const subs = await subcategoriesAPI.getAll(categoryId);
+                    const subs = unwrapListResponse(await subcategoriesAPI.getAll(categoryId)).items;
                     subcatSelect.innerHTML = '<option value="">All Subcategories</option>' +
                         subs.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
                     subcatSelect.style.display = 'block';
@@ -703,7 +705,7 @@
             if (categoryId) {
                 const cat = categories.find(c => c.id == categoryId);
                 if (cat && cat.type === 'detailed') {
-                    const subs = await subcategoriesAPI.getAll(categoryId);
+                    const subs = unwrapListResponse(await subcategoriesAPI.getAll(categoryId)).items;
                     subcatSelect.innerHTML = '<option value="">Select Subcategory</option>' +
                         subs.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
                     subcatGroup.style.display = '';
@@ -742,8 +744,9 @@
                 updateBulkBar();
                 return;
             }
-            tbody.innerHTML = products.map(p => `
+            tbody.innerHTML = products.map((p, i) => `
                 <tr data-product-id="${p.id}">
+                    <td class="col-row-num num">${listRowNumber(pageSkip, i)}</td>
                     <td><input type="checkbox" class="row-check" data-id="${p.id}" ${selectedIds.has(p.id) ? 'checked' : ''} onchange="toggleRow(${p.id}, this.checked)"></td>
                     <td>
                         ${p.image
@@ -974,14 +977,7 @@
 
             // Strip inline background-color and color styles injected by Quill's dark-theme detection
             if (data.description) {
-                const tmp = document.createElement('div');
-                tmp.innerHTML = data.description;
-                tmp.querySelectorAll('[style]').forEach(el => {
-                    el.style.removeProperty('background-color');
-                    el.style.removeProperty('color');
-                    if (!el.getAttribute('style').trim()) el.removeAttribute('style');
-                });
-                data.description = tmp.innerHTML;
+                data.description = RichEditor.sanitizeHtml(data.description);
             }
 
             try {

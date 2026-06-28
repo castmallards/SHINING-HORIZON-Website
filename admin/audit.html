@@ -43,14 +43,14 @@
                 </div>
                 <div class="card-body">
                     <div class="filters">
-                        <select id="filter-entity" class="filter-select" onchange="reload()">
+                        <select id="filter-entity" class="filter-select" onchange="pageSkip = 0; reload()">
                             <option value="">All Entities</option>
                             <option value="category">Categories</option>
                             <option value="subcategory">Subcategories</option>
                             <option value="product">Products</option>
                             <option value="brand">Brands</option>
                         </select>
-                        <select id="filter-action" class="filter-select" onchange="reload()">
+                        <select id="filter-action" class="filter-select" onchange="pageSkip = 0; reload()">
                             <option value="">All Actions</option>
                             <option value="create">Create</option>
                             <option value="update">Update</option>
@@ -58,32 +58,49 @@
                             <option value="unpublish">Unpublish</option>
                             <option value="delete">Delete</option>
                         </select>
-                        <button class="btn btn-sm btn-secondary" onclick="reload()">Refresh</button>
+                        <select id="filter-user" class="filter-select" onchange="pageSkip = 0; reload()">
+                            <option value="">All Users</option>
+                        </select>
+                        <input type="date" id="filter-since" class="form-input" style="max-width:160px;" title="From date" onchange="pageSkip = 0; reload()">
+                        <input type="date" id="filter-until" class="form-input" style="max-width:160px;" title="To date" onchange="pageSkip = 0; reload()">
+                        <button class="btn btn-sm btn-secondary" type="button" onclick="clearFilters()">Clear filters</button>
+                        <button class="btn btn-sm btn-secondary" type="button" onclick="reload()">Refresh</button>
                     </div>
 
                     <div class="table-container">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>When</th>
-                                    <th>Who</th>
+                                    <th class="col-row-num num">#</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>User</th>
                                     <th>Action</th>
                                     <th>Entity</th>
                                     <th>Target</th>
-                                    <th>Changes</th>
-                                    <th>IP</th>
+                                    <th>Summary</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody id="audit-table">
-                                <tr><td colspan="7"><div class="loading"><div class="spinner"></div></div></td></tr>
+                                <tr><td colspan="9"><div class="loading"><div class="spinner"></div></div></td></tr>
                             </tbody>
                         </table>
                     </div>
 
-                    <div id="pagination" style="display:flex; align-items:center; justify-content:space-between; margin-top:14px;">
+                    <div id="pagination" style="display:flex; align-items:center; justify-content:space-between; margin-top:14px; flex-wrap:wrap; gap:10px;">
                         <small id="pagination-info" style="color:#64748b;"></small>
-                        <div style="display:flex; gap: 6px;">
+                        <div class="pagination-controls">
+                            <label class="pagination-page-size">
+                                Per page
+                                <select id="page-size" onchange="onPageSizeChange()">
+                                    <option value="25">25</option>
+                                    <option value="50" selected>50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </label>
                             <button class="btn btn-sm btn-secondary" id="pg-prev" onclick="goPage(-1)">Previous</button>
+                            <span id="pagination-page" style="font-size:0.8125rem; color:#64748b; min-width:5rem; text-align:center;"></span>
                             <button class="btn btn-sm btn-secondary" id="pg-next" onclick="goPage(1)">Next</button>
                         </div>
                     </div>
@@ -91,6 +108,21 @@
             </div>
         </div>
     </main>
+
+    <div class="modal-overlay" id="audit-detail-modal">
+        <div class="modal modal-wide">
+            <div class="modal-header">
+                <h3 class="modal-title" id="audit-detail-title">Audit entry</h3>
+                <button class="modal-close" type="button" onclick="closeModal('audit-detail-modal')">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body" id="audit-detail-body"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('audit-detail-modal')">Close</button>
+            </div>
+        </div>
+    </div>
 
     <div id="toast-container" class="toast-container"></div>
 
@@ -103,6 +135,7 @@
         let pageSize = 50;
         let pageSkip = 0;
         let total = 0;
+        let auditItems = [];
 
         document.addEventListener('DOMContentLoaded', async () => {
             initUserInfo();
@@ -113,44 +146,184 @@
                     '<div class="card"><div class="card-body"><h3>Access denied</h3><p style="color:#64748b">The audit log is available to super admins only.</p></div></div>';
                 return;
             }
+            const savedPageSize = localStorage.getItem('audit-page-size');
+            if (savedPageSize) {
+                pageSize = parseInt(savedPageSize, 10) || 50;
+                document.getElementById('page-size').value = String(pageSize);
+            }
+            await loadUsers();
             await reload();
         });
+
+        async function loadUsers() {
+            try {
+                const users = await usersAPI.getAll();
+                const select = document.getElementById('filter-user');
+                select.innerHTML = '<option value="">All Users</option>' +
+                    users.map((user) => `<option value="${user.id}">${escapeHtml(user.full_name || user.username)}</option>`).join('');
+            } catch (e) {
+                /* non-fatal */
+            }
+        }
+
+        function clearFilters() {
+            document.getElementById('filter-entity').value = '';
+            document.getElementById('filter-action').value = '';
+            document.getElementById('filter-user').value = '';
+            document.getElementById('filter-since').value = '';
+            document.getElementById('filter-until').value = '';
+            pageSkip = 0;
+            reload();
+        }
 
         async function reload() {
             const params = {
                 entity_type: document.getElementById('filter-entity').value || null,
                 action: document.getElementById('filter-action').value || null,
+                user_id: document.getElementById('filter-user').value || null,
                 skip: pageSkip,
                 limit: pageSize,
             };
+            const since = document.getElementById('filter-since').value;
+            const until = document.getElementById('filter-until').value;
+            if (since) params.since = `${since}T00:00:00`;
+            if (until) params.until = `${until}T23:59:59`;
+
             const tbody = document.getElementById('audit-table');
-            tbody.innerHTML = '<tr><td colspan="7"><div class="loading"><div class="spinner"></div></div></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9"><div class="loading"><div class="spinner"></div></div></td></tr>';
             try {
                 const res = await auditAPI.list(params);
                 total = res.total || 0;
-                renderRows(res.items || []);
-                renderPagination();
+                auditItems = res.items || [];
+                renderRows(auditItems);
+                renderListPagination({ total, pageSkip, pageSize });
                 document.getElementById('results-title').textContent =
                     total ? `${total.toLocaleString()} entries` : 'All Activity';
             } catch (e) {
-                tbody.innerHTML = `<tr><td colspan="7" style="color:#b91c1c">${escapeHtml(e.message)}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" style="color:#b91c1c">${escapeHtml(e.message)}</td></tr>`;
             }
+        }
+
+        function splitTimestamp(iso) {
+            if (!iso) return { date: '—', time: '—' };
+            const d = new Date(iso);
+            return {
+                date: d.toLocaleDateString('en-GB', { dateStyle: 'medium' }),
+                time: d.toLocaleTimeString('en-GB', { timeStyle: 'short' }),
+            };
+        }
+
+        function renderTargetCell(it) {
+            const label = escapeHtml(it.entity_label || '—');
+            if (!it.entity_id) return label;
+            const adminUrl = adminEntityUrl(it.entity_type, it.entity_id);
+            if (it.entity_exists && adminUrl) {
+                return `<a href="${adminUrl}" class="preview-link">${label}</a>`;
+            }
+            if (it.entity_exists === false) {
+                return `${label} <small style="color:#94a3b8">(deleted)</small>`;
+            }
+            return label;
+        }
+
+        function changesSummary(changes, action) {
+            if (!changes || typeof changes !== 'object' || !Object.keys(changes).length) {
+                if (action === 'create') return 'Created (open details for fields)';
+                if (action === 'delete') return 'Deleted';
+                return '—';
+            }
+            const keys = Object.keys(changes).slice(0, 3).map(auditFieldLabel);
+            const more = Object.keys(changes).length > 3 ? ` +${Object.keys(changes).length - 3} more` : '';
+            return escapeHtml(keys.join(', ') + more);
         }
 
         function renderRows(items) {
             const tbody = document.getElementById('audit-table');
             if (!items.length) { showEmptyState(tbody, 'No activity yet'); return; }
-            tbody.innerHTML = items.map(it => `
+            tbody.innerHTML = items.map((it, idx) => {
+                const ts = splitTimestamp(it.created_at);
+                const publicUrl = it.entity_slug ? previewUrl(it.entity_type, it.entity_slug, it.entity_status) : null;
+                return `
                 <tr>
-                    <td><small style="color:#64748b">${formatTimestamp(it.created_at)}</small></td>
-                    <td>${escapeHtml(it.username || '—')}</td>
+                    <td class="col-row-num num">${listRowNumber(pageSkip, idx)}</td>
+                    <td><small style="color:#64748b">${ts.date}</small></td>
+                    <td><small style="color:#64748b">${ts.time}</small></td>
+                    <td>${escapeHtml(formatAuditUser(it))}</td>
                     <td><span class="badge ${actionBadge(it.action)}">${escapeHtml(it.action)}</span></td>
                     <td>${escapeHtml(it.entity_type)} <small style="color:#64748b">#${it.entity_id ?? '—'}</small></td>
-                    <td>${escapeHtml(it.entity_label || '—')}</td>
-                    <td>${renderChanges(it.changes)}</td>
-                    <td><small style="color:#64748b">${escapeHtml(it.ip_address || '—')}</small></td>
-                </tr>
-            `).join('');
+                    <td>${renderTargetCell(it)}</td>
+                    <td><small>${changesSummary(it.changes, it.action)}</small></td>
+                    <td>
+                        <div class="table-actions">
+                            ${publicUrl && it.entity_exists ? `<a href="${publicUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary">View</a>` : ''}
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="showAuditDetail(${idx})">Details</button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function showAuditDetail(index) {
+            const it = auditItems[index];
+            if (!it) return;
+            const ts = splitTimestamp(it.created_at);
+            document.getElementById('audit-detail-title').textContent =
+                `${it.action} ${it.entity_type}${it.entity_label ? ': ' + it.entity_label : ''}`;
+
+            const adminUrl = adminEntityUrl(it.entity_type, it.entity_id);
+            const publicUrl = it.entity_slug ? previewUrl(it.entity_type, it.entity_slug, it.entity_status) : null;
+
+            let html = `
+                <dl class="audit-detail-meta">
+                    <div><dt>Date</dt><dd>${escapeHtml(ts.date)} ${escapeHtml(ts.time)}</dd></div>
+                    <div><dt>User</dt><dd>${escapeHtml(formatAuditUser(it))}</dd></div>
+                    <div><dt>Action</dt><dd>${escapeHtml(it.action)}</dd></div>
+                    <div><dt>Entity</dt><dd>${escapeHtml(it.entity_type)} #${it.entity_id ?? '—'}</dd></div>
+                    <div><dt>Target</dt><dd>${escapeHtml(it.entity_label || '—')}${it.entity_exists === false ? ' (deleted)' : ''}</dd></div>
+                    <div><dt>IP</dt><dd>${escapeHtml(it.ip_address || '—')}</dd></div>
+                </dl>
+            `;
+
+            if (adminUrl && it.entity_exists) {
+                html += `<p style="margin:12px 0;"><a href="${adminUrl}" class="btn btn-sm btn-secondary">Open in admin</a>`;
+                if (publicUrl) html += ` <a href="${publicUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary">View on site</a>`;
+                html += '</p>';
+            }
+
+            html += '<h4 style="margin:16px 0 8px; font-size:0.875rem; color:#64748b;">Field changes</h4>';
+            html += renderChangesDetail(it.changes, it.action);
+
+            document.getElementById('audit-detail-body').innerHTML = html;
+            openModal('audit-detail-modal');
+        }
+
+        function renderChangesDetail(changes, action) {
+            if (!changes || typeof changes !== 'object' || !Object.keys(changes).length) {
+                if (action === 'create') {
+                    return '<p style="color:#64748b;">No field snapshot stored for this create (older entries). New creates record all initial values.</p>';
+                }
+                return '<p style="color:#64748b;">No field-level changes recorded.</p>';
+            }
+            const rows = Object.keys(changes).map((k) => {
+                const [from, to] = changes[k];
+                const label = auditFieldLabel(k);
+                if (from === null || from === undefined) {
+                    return `<tr><td>${escapeHtml(label)}</td><td class="audit-val-new">${escapeHtml(formatAuditVal(to, false))}</td></tr>`;
+                }
+                return `<tr><td>${escapeHtml(label)}</td><td><span class="from">${escapeHtml(formatAuditVal(from, false))}</span> → <span class="to">${escapeHtml(formatAuditVal(to, false))}</span></td></tr>`;
+            }).join('');
+            return `<table class="audit-detail-table"><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>${rows}</tbody></table>`;
+        }
+
+        function formatAuditVal(v, truncate = true) {
+            if (v === null || v === undefined) return '—';
+            if (typeof v === 'string') {
+                if (!truncate) return v;
+                return v.length > 200 ? v.slice(0, 197) + '…' : v;
+            }
+            const s = JSON.stringify(v, null, 0);
+            if (!truncate) return s;
+            return s.length > 200 ? s.slice(0, 197) + '…' : s;
         }
 
         function actionBadge(action) {
@@ -163,36 +336,11 @@
             }
         }
 
-        function renderChanges(changes) {
-            if (!changes || typeof changes !== 'object' || Object.keys(changes).length === 0) return '<small style="color:#94a3b8">—</small>';
-            const parts = Object.keys(changes).map(k => {
-                const [from, to] = changes[k];
-                return `<div><span class="key">${escapeHtml(k)}</span>: <span class="from">${escapeHtml(formatVal(from))}</span> → <span class="to">${escapeHtml(formatVal(to))}</span></div>`;
-            });
-            return `<div class="audit-changes">${parts.join('')}</div>`;
-        }
-
-        function formatVal(v) {
-            if (v === null || v === undefined) return '∅';
-            if (typeof v === 'string') return v.length > 60 ? v.slice(0, 57) + '…' : v;
-            return JSON.stringify(v);
-        }
-
-        function formatTimestamp(iso) {
-            if (!iso) return '—';
-            const d = new Date(iso);
-            return d.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
-        }
-
-        function renderPagination() {
-            const info = document.getElementById('pagination-info');
-            const prev = document.getElementById('pg-prev');
-            const next = document.getElementById('pg-next');
-            const start = total ? pageSkip + 1 : 0;
-            const end = Math.min(pageSkip + pageSize, total);
-            info.textContent = total ? `Showing ${start.toLocaleString()}–${end.toLocaleString()} of ${total.toLocaleString()}` : '';
-            prev.disabled = pageSkip <= 0;
-            next.disabled = end >= total;
+        function onPageSizeChange() {
+            pageSize = parseInt(document.getElementById('page-size').value, 10) || 50;
+            localStorage.setItem('audit-page-size', String(pageSize));
+            pageSkip = 0;
+            reload();
         }
 
         function goPage(direction) {

@@ -231,6 +231,121 @@ function previewUrl(entity_type, slug, status) {
     return path;
 }
 
+function sanitizeRichHtml(html) {
+    if (!html) return html;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    tmp.querySelectorAll('[style]').forEach((el) => {
+        el.style.removeProperty('background-color');
+        el.style.removeProperty('color');
+        if (!el.getAttribute('style').trim()) el.removeAttribute('style');
+    });
+    return tmp.innerHTML;
+}
+
+function listRowNumber(pageSkip, index) {
+    return pageSkip + index + 1;
+}
+
+/** Normalize list API responses ({ items, total } or legacy array). */
+function unwrapListResponse(res) {
+    if (Array.isArray(res)) return { items: res, total: res.length, skip: 0, limit: res.length };
+    return {
+        items: res.items || [],
+        total: typeof res.total === 'number' ? res.total : (res.items || []).length,
+        skip: res.skip || 0,
+        limit: res.limit || (res.items || []).length,
+    };
+}
+
+function renderListPagination({ total, pageSkip, pageSize }) {
+    const info = document.getElementById('pagination-info');
+    const pageEl = document.getElementById('pagination-page');
+    const prev = document.getElementById('pg-prev');
+    const next = document.getElementById('pg-next');
+    if (!info) return;
+    const start = total ? pageSkip + 1 : 0;
+    const end = Math.min(pageSkip + pageSize, total);
+    const totalPages = total ? Math.ceil(total / pageSize) : 1;
+    const currentPage = total ? Math.floor(pageSkip / pageSize) + 1 : 1;
+    info.textContent = total ? `Showing ${start.toLocaleString()}–${end.toLocaleString()} of ${total.toLocaleString()}` : '';
+    if (pageEl) pageEl.textContent = total ? `Page ${currentPage} of ${totalPages}` : '';
+    if (prev) prev.disabled = pageSkip <= 0;
+    if (next) next.disabled = end >= total;
+}
+
+function readFocusParam() {
+    const focus = new URLSearchParams(window.location.search).get('focus');
+    if (!focus) return null;
+    const id = parseInt(focus, 10);
+    return Number.isNaN(id) ? null : id;
+}
+
+function clearFocusFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('focus')) return;
+    params.delete('focus');
+    const qs = params.toString();
+    history.replaceState({}, '', qs ? `${window.location.pathname.split('/').pop()}?${qs}` : window.location.pathname.split('/').pop());
+}
+
+function highlightEntityRow(entityId, attr = 'data-entity-id') {
+    document.querySelectorAll('tr.row-focused').forEach((row) => row.classList.remove('row-focused'));
+    const row = document.querySelector(`tr[${attr}="${entityId}"]`);
+    if (row) {
+        row.classList.add('row-focused');
+        row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+}
+
+function adminEntityUrl(entityType, entityId) {
+    if (!entityId) return null;
+    const map = {
+        product: 'products.html',
+        category: 'categories.html',
+        brand: 'brands.html',
+        subcategory: 'subcategories.html',
+    };
+    const page = map[entityType];
+    return page ? `${page}?focus=${entityId}` : null;
+}
+
+function formatAuditUser(entry) {
+    if (!entry.username && !entry.full_name) return '—';
+    if (entry.full_name && entry.username) {
+        return `${entry.full_name} (@${entry.username})`;
+    }
+    return entry.full_name || entry.username || '—';
+}
+
+const AUDIT_FIELD_LABELS = {
+    name: 'Name',
+    slug: 'Slug',
+    part_number: 'Part number',
+    category_id: 'Category',
+    subcategory_id: 'Subcategory',
+    brand_id: 'Brand',
+    status: 'Status',
+    is_active: 'Active',
+    is_featured: 'Featured',
+    image: 'Image',
+    datasheet_url: 'Datasheet',
+    display_order: 'Display order',
+    short_description: 'Short description',
+    meta_title: 'Meta title',
+    meta_description: 'Meta description',
+    description: 'Description',
+    type: 'Type',
+    show_on_home: 'Show on home',
+    logo: 'Logo',
+    website_url: 'Website',
+    country: 'Country',
+};
+
+function auditFieldLabel(key) {
+    return AUDIT_FIELD_LABELS[key] || key.replace(/_/g, ' ');
+}
+
 // Set active nav item
 function setActiveNav(page) {
     document.querySelectorAll('.nav-item').forEach(item => {

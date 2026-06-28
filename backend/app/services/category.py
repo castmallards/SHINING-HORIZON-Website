@@ -82,6 +82,7 @@ class CategoryService:
             entity_label=category.name,
             user_id=actor_id,
             ip_address=ip,
+            after=snapshot(category, _AUDIT_FIELDS),
         )
         return category
 

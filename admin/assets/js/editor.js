@@ -55,5 +55,10 @@
         REGISTRY.delete(textareaId);
     }
 
-    window.RichEditor = { mount, setValue, destroy };
+    function sanitizeHtml(html) {
+        if (typeof sanitizeRichHtml === 'function') return sanitizeRichHtml(html);
+        return html || '';
+    }
+
+    window.RichEditor = { mount, setValue, destroy, sanitizeHtml };
 })();

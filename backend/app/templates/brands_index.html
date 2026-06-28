@@ -55,7 +55,7 @@
                     </div>
                     <h3 class="font-semibold text-gray-900 mb-2">{{ brand.name }}</h3>
                     {% if brand.description %}
-                        <p class="text-sm text-gray-600 mb-3 line-clamp-2">{{ brand.description }}</p>
+                        <p class="text-sm text-gray-600 mb-3 line-clamp-2">{{ brand.description | striptags }}</p>
                     {% else %}
                         <p class="text-sm text-gray-600 mb-3">Quality Industrial Products</p>
                     {% endif %}

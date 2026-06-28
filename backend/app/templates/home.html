@@ -85,7 +85,7 @@
         align-items: center;
         width: max-content;
         flex-shrink: 0;
-        animation: scrollBrands 40s linear infinite;
+        animation: scrollBrands 90s linear infinite;
     }
     .brands-scroll:hover { animation-play-state: paused; }
     @keyframes scrollBrands {
@@ -401,7 +401,7 @@
                 </div>
                 <h4 class="font-bold text-gray-900 text-sm text-center">{{ category.name }}</h4>
                 <p class="text-xs text-gray-500 text-center mt-1 mb-3 line-clamp-2">
-                    {{ category.hero_description or category.description or '' }}
+                    {{ (category.hero_description or category.description or '') | striptags }}
                 </p>
                 <a href="/category/{{ category.slug }}" class="block w-full text-xs bg-primary text-white py-2 rounded-lg font-medium hover:bg-primary-dark transition text-center">View Details</a>
             </div>

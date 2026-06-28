@@ -12,7 +12,11 @@ from ..schemas.product import ProductCreate, ProductUpdate
 from ..cache import invalidate_public
 from .audit import AuditService, snapshot
 
-_AUDIT_FIELDS = ("name", "slug", "part_number", "category_id", "subcategory_id", "brand_id", "status", "is_active", "is_featured", "image", "datasheet_url", "display_order")
+_AUDIT_FIELDS = (
+    "name", "slug", "part_number", "category_id", "subcategory_id", "brand_id",
+    "status", "is_active", "is_featured", "image", "datasheet_url", "display_order",
+    "short_description", "meta_title", "meta_description",
+)
 
 class ProductService:
     @staticmethod
@@ -273,9 +277,10 @@ class ProductService:
             action=AuditAction.CREATE,
             entity_type="product",
             entity_id=product.id,
-            entity_label=product.name,
+            entity_label=product.part_number or product.name,
             user_id=actor_id,
             ip_address=ip,
+            after=snapshot(product, _AUDIT_FIELDS),
         )
         return product
 
