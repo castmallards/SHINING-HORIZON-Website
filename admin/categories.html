@@ -448,6 +448,27 @@
             input.value = '';
         }
 
+        async function uploadCategoryImageFromUrl(url) {
+            if (!url) return;
+            const preview = document.getElementById('image-preview');
+            preview.innerHTML = '<div class="spinner"></div>';
+            try {
+                const result = await uploadAPI.uploadImageFromUrl(url, 'categories');
+                document.getElementById('image-path').value = result.path;
+                preview.innerHTML = `<img src="${adminImageUrl(result.path, 'card')}" style="max-width:100%; max-height:150px; border-radius:8px;">`;
+                showToast('Image imported');
+            } catch (error) {
+                preview.innerHTML = `<p style="color:#dc2626;">Import failed: ${error.message}</p>`;
+                showToast('Import failed', 'error');
+            }
+        }
+
+        async function handleImageUpload(input) {
+            const file = input.files?.[0];
+            if (file) await uploadCategoryImage(file);
+            input.value = '';
+        }
+
         async function deleteCategory(id) {
             if (!await confirmDialog('Delete this category? All products in it will also be deleted.')) return;
             try {
