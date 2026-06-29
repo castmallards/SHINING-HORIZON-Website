@@ -77,6 +77,7 @@ class BrandService:
             entity_label=brand.name,
             user_id=actor_id,
             ip_address=ip,
+            after=snapshot(brand, _AUDIT_FIELDS),
         )
         return brand
 

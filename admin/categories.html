@@ -7,6 +7,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="/static/logo/Shinning_Horizon_logo.png" type="image/png">
     <link rel="stylesheet" href="assets/css/style.css">
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
 </head>
 <body>
     <aside class="sidebar" id="admin-sidebar">
@@ -54,7 +56,7 @@
                 </div>
                 <div class="card-body">
                     <div class="filters" style="margin-bottom: 12px;">
-                        <select id="filter-status" class="filter-select" onchange="loadCategories()">
+                        <select id="filter-status" class="filter-select" onchange="pageSkip = 0; loadCategories()">
                             <option value="">All Statuses</option>
                             <option value="published">Published</option>
                             <option value="draft">Draft</option>
@@ -64,6 +66,7 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
+                                    <th class="col-row-num num">#</th>
                                     <th class="col-img" style="width:8%;">Image</th>
                                     <th style="width:20%;">Name</th>
                                     <th style="width:10%;">Type</th>
@@ -74,9 +77,26 @@
                                 </tr>
                             </thead>
                             <tbody id="categories-table">
-                                <tr><td colspan="7"><div class="loading"><div class="spinner"></div></div></td></tr>
+                                <tr><td colspan="8"><div class="loading"><div class="spinner"></div></div></td></tr>
                             </tbody>
                         </table>
+                    </div>
+                    <div id="pagination" style="display:flex; align-items:center; justify-content:space-between; margin-top:14px; flex-wrap:wrap; gap:10px;">
+                        <small id="pagination-info" style="color:#64748b;"></small>
+                        <div class="pagination-controls">
+                            <label class="pagination-page-size">
+                                Per page
+                                <select id="page-size" onchange="onPageSizeChange()">
+                                    <option value="10">10</option>
+                                    <option value="25" selected>25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </label>
+                            <button class="btn btn-sm btn-secondary" id="pg-prev" onclick="goPage(-1)">Previous</button>
+                            <span id="pagination-page" style="font-size:0.8125rem; color:#64748b; min-width:5rem; text-align:center;"></span>
+                            <button class="btn btn-sm btn-secondary" id="pg-next" onclick="goPage(1)">Next</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -121,8 +141,8 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Description</label>
-                        <input type="text" name="description" class="form-input" placeholder="Short description for cards">
+                        <label class="form-label">Card summary</label>
+                        <input type="text" name="description" class="form-input" placeholder="Short plain-text blurb for category cards">
                     </div>
 
                     <div class="form-group">
@@ -131,8 +151,10 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Hero Description</label>
-                        <textarea name="hero_description" class="form-textarea" placeholder="Description shown on category page"></textarea>
+                        <label class="form-label">Page description</label>
+                        <p style="color:#64748b; font-size:0.8125rem; margin: 0 0 8px;">Full description on the category page — headings, lists, bold, links.</p>
+                        <textarea name="hero_description" id="category-hero-description" class="form-textarea"></textarea>
+                        <div id="category-hero-editor"></div>
                     </div>
 
                     <div class="form-group">
@@ -187,15 +209,37 @@
     <script src="assets/js/auth.js"></script>
     <script src="assets/js/api.js"></script>
     <script src="assets/js/utils.js"></script>
+    <script src="assets/js/editor.js"></script>
     <script src="assets/js/image-drop.js?v=3"></script>
     <script>
         if (!requireAuth()) {}
 
         let categories = [];
+        let totalCategories = 0;
+        let pageSize = 25;
+        let pageSkip = 0;
+        let pendingFocusId = readFocusParam();
+        let heroEditorMounted = false;
+
+        function ensureHeroEditor() {
+            if (!heroEditorMounted) {
+                RichEditor.mount({
+                    textareaId: 'category-hero-description',
+                    containerId: 'category-hero-editor',
+                    placeholder: 'Describe this category…',
+                });
+                heroEditorMounted = true;
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', async () => {
             initUserInfo();
             applyRoleGates();
+            const savedPageSize = localStorage.getItem('categories-page-size');
+            if (savedPageSize) {
+                pageSize = parseInt(savedPageSize, 10) || 25;
+                document.getElementById('page-size').value = String(pageSize);
+            }
             const uploadZone = document.querySelector('#category-form .image-upload');
             if (uploadZone) {
                 wireImageDropZone(uploadZone, {
@@ -204,16 +248,37 @@
                 });
             }
             await loadCategories();
+            if (pendingFocusId) {
+                highlightEntityRow(pendingFocusId);
+                clearFocusFromUrl();
+                pendingFocusId = null;
+            }
         });
 
         async function loadCategories() {
             try {
                 const status = document.getElementById('filter-status').value || null;
-                categories = await categoriesAPI.getAll({ status });
+                const res = await categoriesAPI.getAll({ status, skip: pageSkip, limit: pageSize });
+                const data = unwrapListResponse(res);
+                categories = data.items;
+                totalCategories = data.total;
                 renderCategories();
+                renderListPagination({ total: totalCategories, pageSkip, pageSize });
             } catch (error) {
                 showToast('Failed to load categories: ' + error.message, 'error');
             }
+        }
+
+        function onPageSizeChange() {
+            pageSize = parseInt(document.getElementById('page-size').value, 10) || 25;
+            localStorage.setItem('categories-page-size', String(pageSize));
+            pageSkip = 0;
+            loadCategories();
+        }
+
+        function goPage(direction) {
+            pageSkip = Math.max(0, pageSkip + direction * pageSize);
+            loadCategories();
         }
 
         function renderCategories() {
@@ -222,11 +287,12 @@
                 showEmptyState(tbody, 'No categories found');
                 return;
             }
-            tbody.innerHTML = categories.map(cat => {
+            tbody.innerHTML = categories.map((cat, i) => {
                 const viewHref = previewUrl('category', cat.slug, cat.status);
                 const viewLabel = cat.status === 'published' ? 'View' : 'Preview';
                 return `
-                <tr>
+                <tr data-entity-id="${cat.id}">
+                    <td class="col-row-num num">${listRowNumber(pageSkip, i)}</td>
                     <td class="col-img">
                         ${cat.image
                             ? `<img src="${adminImageUrl(cat.image, 'thumb')}" class="image-preview" alt="${escapeHtml(cat.name)}">`
@@ -263,12 +329,21 @@
             document.getElementById('image-preview').innerHTML = blankPreview();
             document.getElementById('preview-link').style.display = 'none';
             document.querySelector('select[name="status"]').value = 'draft';
+            ensureHeroEditor();
+            RichEditor.setValue('category-hero-description', '');
             openModal('category-modal');
         }
 
         function editCategory(id) {
             const cat = categories.find(c => c.id === id);
-            if (!cat) return;
+            if (!cat) {
+                categoriesAPI.getById(id).then(editCategoryFromData).catch((e) => showToast(e.message, 'error'));
+                return;
+            }
+            editCategoryFromData(cat);
+        }
+
+        function editCategoryFromData(cat) {
 
             document.getElementById('modal-title').textContent = 'Edit Category';
             document.getElementById('category-id').value = cat.id;
@@ -281,7 +356,20 @@
                 preview.innerHTML = blankPreview();
             }
 
-            fillForm('category-form', cat);
+            fillForm('category-form', {
+                name: cat.name,
+                type: cat.type,
+                description: cat.description,
+                hero_title: cat.hero_title,
+                display_order: cat.display_order,
+                is_active: cat.is_active,
+                show_on_home: cat.show_on_home,
+                status: cat.status,
+                meta_title: cat.meta_title,
+                meta_description: cat.meta_description,
+            });
+            ensureHeroEditor();
+            RichEditor.setValue('category-hero-description', cat.hero_description || '');
 
             const link = document.getElementById('preview-link');
             link.href = previewUrl('category', cat.slug, cat.status);
@@ -303,6 +391,11 @@
             ['meta_title', 'meta_description'].forEach(k => {
                 if (data[k] === '' || data[k] === undefined) delete data[k];
             });
+            if (data.hero_description) {
+                data.hero_description = RichEditor.sanitizeHtml(data.hero_description);
+            } else {
+                delete data.hero_description;
+            }
 
             try {
                 if (id) {
@@ -332,6 +425,27 @@
                 preview.innerHTML = `<p style="color:#dc2626;">Upload failed: ${error.message}</p>`;
                 showToast('Upload failed', 'error');
             }
+        }
+
+        async function uploadCategoryImageFromUrl(url) {
+            if (!url) return;
+            const preview = document.getElementById('image-preview');
+            preview.innerHTML = '<div class="spinner"></div>';
+            try {
+                const result = await uploadAPI.uploadImageFromUrl(url, 'categories');
+                document.getElementById('image-path').value = result.path;
+                preview.innerHTML = `<img src="${adminImageUrl(result.path, 'card')}" style="max-width:100%; max-height:150px; border-radius:8px;">`;
+                showToast('Image imported');
+            } catch (error) {
+                preview.innerHTML = `<p style="color:#dc2626;">Import failed: ${error.message}</p>`;
+                showToast('Import failed', 'error');
+            }
+        }
+
+        async function handleImageUpload(input) {
+            const file = input.files?.[0];
+            if (file) await uploadCategoryImage(file);
+            input.value = '';
         }
 
         async function uploadCategoryImageFromUrl(url) {

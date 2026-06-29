@@ -37,7 +37,12 @@ class AuditService:
         after: Optional[Mapping[str, Any]] = None,
     ) -> None:
         try:
-            changes = _diff(before, after) if action == AuditAction.UPDATE else None
+            if action == AuditAction.UPDATE:
+                changes = _diff(before, after)
+            elif action == AuditAction.CREATE and after:
+                changes = _initial_snapshot(after)
+            else:
+                changes = None
             db: Session = SessionLocal()
             try:
                 entry = AuditLog(
@@ -73,6 +78,18 @@ def snapshot(obj: Any, fields: Iterable[str]) -> dict:
                 value = value.value
             out[f] = value
     return out
+
+
+def _initial_snapshot(after: Mapping[str, Any]) -> dict:
+    """Record values set on create as ``{field: [null, new]}``."""
+    diff: dict = {}
+    for k, v in after.items():
+        if k in _REDACTED_FIELDS:
+            continue
+        if v is None or v == "" or v == []:
+            continue
+        diff[k] = [None, _jsonable(v)]
+    return diff
 
 
 def _diff(before: Optional[Mapping[str, Any]], after: Optional[Mapping[str, Any]]) -> dict:

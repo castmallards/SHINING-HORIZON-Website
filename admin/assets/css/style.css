@@ -369,6 +369,19 @@ table.data-table { table-layout: fixed; width: 100%; }
 table.data-table th { overflow: hidden; text-overflow: ellipsis; }
 table.data-table td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 table.data-table td.wrap { white-space: normal; }
+table.data-table th.col-row-num,
+table.data-table td.col-row-num,
+th.col-row-num,
+td.col-row-num {
+    width: 3rem;
+    max-width: 3rem;
+    text-align: right;
+    color: #94a3b8;
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
 table.data-table th.col-img,
 table.data-table td.col-img { text-align: center; vertical-align: middle; padding: 8px; }
 .image-preview { display: inline-block; }
@@ -607,7 +620,6 @@ tr:hover {
 .image-upload input {
     display: none;
 }
-
 
 .pdf-upload {
     border: 2px dashed #d1d5db;
@@ -1003,6 +1015,52 @@ tr.row-focused {
     border: 1px solid #d1d5db;
     border-radius: 6px;
     font-size: 0.8125rem;
+}
+
+.audit-detail-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px 20px;
+    font-size: 0.875rem;
+}
+
+.audit-detail-meta dt {
+    color: #64748b;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 2px;
+}
+
+.audit-detail-meta dd {
+    margin: 0;
+    color: #1e293b;
+    font-weight: 500;
+}
+
+.audit-detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.audit-detail-table th,
+.audit-detail-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: left;
+    vertical-align: top;
+}
+
+.audit-detail-table th {
+    background: #f8fafc;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.audit-val-new {
+    color: #166534;
+    word-break: break-word;
 }
 
 /* Audit log table */

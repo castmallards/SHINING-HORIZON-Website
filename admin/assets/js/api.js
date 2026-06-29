@@ -116,7 +116,7 @@ function buildQuery(params) {
 }
 
 const categoriesAPI = {
-    getAll: (params = {}) => apiRequest(`/categories/${buildQuery({ include_inactive: true, ...params })}`),
+    getAll: (params = {}) => apiRequest(`/categories/${buildQuery({ include_inactive: true, limit: 500, ...params })}`),
     getById: (id) => apiRequest(`/categories/${id}`),
     create: (data) => apiRequest('/categories/', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => apiRequest(`/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -125,7 +125,7 @@ const categoriesAPI = {
 
 const subcategoriesAPI = {
     getAll: (categoryId = null, params = {}) =>
-        apiRequest(`/subcategories/${buildQuery({ include_inactive: true, category_id: categoryId, ...params })}`),
+        apiRequest(`/subcategories/${buildQuery({ include_inactive: true, limit: 500, category_id: categoryId, ...params })}`),
     getById: (id) => apiRequest(`/subcategories/${id}`),
     create: (data) => apiRequest('/subcategories/', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => apiRequest(`/subcategories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -133,7 +133,7 @@ const subcategoriesAPI = {
 };
 
 const brandsAPI = {
-    getAll: (params = {}) => apiRequest(`/brands/${buildQuery({ include_inactive: true, ...params })}`),
+    getAll: (params = {}) => apiRequest(`/brands/${buildQuery({ include_inactive: true, limit: 500, ...params })}`),
     getById: (id) => apiRequest(`/brands/${id}`),
     create: (data) => apiRequest('/brands/', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => apiRequest(`/brands/${id}`, { method: 'PUT', body: JSON.stringify(data) }),

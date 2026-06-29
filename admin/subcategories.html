@@ -7,6 +7,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="/static/logo/Shinning_Horizon_logo.png" type="image/png">
     <link rel="stylesheet" href="assets/css/style.css">
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
 </head>
 <body>
     <aside class="sidebar" id="admin-sidebar">
@@ -54,10 +56,10 @@
                 </div>
                 <div class="card-body">
                     <div class="filters">
-                        <select id="filter-category" class="filter-select" onchange="loadSubcategories()">
+                        <select id="filter-category" class="filter-select" onchange="pageSkip = 0; loadSubcategories()">
                             <option value="">All Categories</option>
                         </select>
-                        <select id="filter-status" class="filter-select" onchange="loadSubcategories()">
+                        <select id="filter-status" class="filter-select" onchange="pageSkip = 0; loadSubcategories()">
                             <option value="">All Statuses</option>
                             <option value="published">Published</option>
                             <option value="draft">Draft</option>
@@ -67,6 +69,7 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
+                                    <th class="col-row-num num">#</th>
                                     <th class="col-img" style="width:8%;">Image</th>
                                     <th style="width:22%;">Name</th>
                                     <th style="width:18%;">Category</th>
@@ -76,9 +79,26 @@
                                 </tr>
                             </thead>
                             <tbody id="subcategories-table">
-                                <tr><td colspan="6"><div class="loading"><div class="spinner"></div></div></td></tr>
+                                <tr><td colspan="7"><div class="loading"><div class="spinner"></div></div></td></tr>
                             </tbody>
                         </table>
+                    </div>
+                    <div id="pagination" style="display:flex; align-items:center; justify-content:space-between; margin-top:14px; flex-wrap:wrap; gap:10px;">
+                        <small id="pagination-info" style="color:#64748b;"></small>
+                        <div class="pagination-controls">
+                            <label class="pagination-page-size">
+                                Per page
+                                <select id="page-size" onchange="onPageSizeChange()">
+                                    <option value="10">10</option>
+                                    <option value="25" selected>25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </label>
+                            <button class="btn btn-sm btn-secondary" id="pg-prev" onclick="goPage(-1)">Previous</button>
+                            <span id="pagination-page" style="font-size:0.8125rem; color:#64748b; min-width:5rem; text-align:center;"></span>
+                            <button class="btn btn-sm btn-secondary" id="pg-next" onclick="goPage(1)">Next</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -106,6 +126,10 @@
                             <div class="select-with-action" data-quick-add="category" data-quick-add-label="New Category">
                                 <select name="category_id" id="modal-category" class="form-select" required></select>
                             </div>
+                            <label class="form-label" for="modal-category">Category *</label>
+                            <div class="select-with-action" data-quick-add="category" data-quick-add-label="New Category">
+                                <select name="category_id" id="modal-category" class="form-select" required></select>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Status *</label>
@@ -123,7 +147,9 @@
 
                     <div class="form-group">
                         <label class="form-label">Description</label>
-                        <textarea name="description" class="form-textarea"></textarea>
+                        <p style="color:#64748b; font-size:0.8125rem; margin: 0 0 8px;">Headings, lists, bold, and links shown on the subcategory page.</p>
+                        <textarea name="description" id="subcategory-description" class="form-textarea"></textarea>
+                        <div id="subcategory-description-editor"></div>
                     </div>
 
                     <div class="form-group">
@@ -172,6 +198,7 @@
     <script src="assets/js/auth.js"></script>
     <script src="assets/js/api.js"></script>
     <script src="assets/js/utils.js"></script>
+    <script src="assets/js/editor.js"></script>
     <script src="assets/js/image-drop.js?v=3"></script>
     <script src="assets/js/quick-add.js"></script>
     <script>
@@ -179,11 +206,32 @@
 
         let categories = [];
         let subcategories = [];
+        let totalSubcategories = 0;
+        let pageSize = 25;
+        let pageSkip = 0;
+        let pendingFocusId = readFocusParam();
+        let descriptionEditorMounted = false;
+
+        function ensureDescriptionEditor() {
+            if (!descriptionEditorMounted) {
+                RichEditor.mount({
+                    textareaId: 'subcategory-description',
+                    containerId: 'subcategory-description-editor',
+                    placeholder: 'Describe this subcategory…',
+                });
+                descriptionEditorMounted = true;
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', async () => {
             initUserInfo();
             applyRoleGates();
             renderBlankPreview();
+            const savedPageSize = localStorage.getItem('subcategories-page-size');
+            if (savedPageSize) {
+                pageSize = parseInt(savedPageSize, 10) || 25;
+                document.getElementById('page-size').value = String(pageSize);
+            }
             QuickAdd.init({
                 mode: 'subcategory',
                 root: document.getElementById('subcategory-form'),
@@ -200,6 +248,11 @@
                 });
             }
             await loadSubcategories();
+            if (pendingFocusId) {
+                highlightEntityRow(pendingFocusId);
+                clearFocusFromUrl();
+                pendingFocusId = null;
+            }
         });
 
         function blankPreview() {
@@ -208,7 +261,8 @@
         function renderBlankPreview() { document.getElementById('image-preview').innerHTML = blankPreview(); }
 
         async function loadCategories() {
-            categories = await categoriesAPI.getAll();
+            const res = await categoriesAPI.getAll({ limit: 500 });
+            categories = unwrapListResponse(res).items;
             const detailed = categories.filter(c => c.type === 'detailed');
             const filterSelect = document.getElementById('filter-category');
             filterSelect.innerHTML = '<option value="">All Categories</option>' +
@@ -222,11 +276,27 @@
             const categoryId = document.getElementById('filter-category').value || null;
             const status = document.getElementById('filter-status').value || null;
             try {
-                subcategories = await subcategoriesAPI.getAll(categoryId, { status });
+                const res = await subcategoriesAPI.getAll(categoryId, { status, skip: pageSkip, limit: pageSize });
+                const data = unwrapListResponse(res);
+                subcategories = data.items;
+                totalSubcategories = data.total;
                 renderSubcategories();
+                renderListPagination({ total: totalSubcategories, pageSkip, pageSize });
             } catch (e) {
                 showToast('Failed to load subcategories: ' + e.message, 'error');
             }
+        }
+
+        function onPageSizeChange() {
+            pageSize = parseInt(document.getElementById('page-size').value, 10) || 25;
+            localStorage.setItem('subcategories-page-size', String(pageSize));
+            pageSkip = 0;
+            loadSubcategories();
+        }
+
+        function goPage(direction) {
+            pageSkip = Math.max(0, pageSkip + direction * pageSize);
+            loadSubcategories();
         }
 
         function renderSubcategories() {
@@ -235,7 +305,7 @@
                 showEmptyState(tbody, 'No subcategories found');
                 return;
             }
-            tbody.innerHTML = subcategories.map(sub => {
+            tbody.innerHTML = subcategories.map((sub, i) => {
                 const cat = categories.find(c => c.id === sub.category_id);
                 const composite = cat ? `${cat.slug}/${sub.slug}` : null;
                 // Subcategory URL is composite (cat-slug/sub-slug). Reuse previewUrl()
@@ -243,7 +313,8 @@
                 const viewHref = composite ? previewUrl('subcategory', composite, sub.status) : null;
                 const viewLabel = sub.status === 'published' ? 'View' : 'Preview';
                 return `
-                <tr>
+                <tr data-entity-id="${sub.id}">
+                    <td class="col-row-num num">${listRowNumber(pageSkip, i)}</td>
                     <td class="col-img">
                         ${sub.image
                             ? `<img src="${adminImageUrl(sub.image, 'thumb')}" class="image-preview" alt="${escapeHtml(sub.name)}">`
@@ -272,6 +343,8 @@
             renderBlankPreview();
             document.getElementById('preview-link').style.display = 'none';
             document.querySelector('select[name="status"]').value = 'draft';
+            ensureDescriptionEditor();
+            RichEditor.setValue('subcategory-description', '');
             openModal('subcategory-modal');
         }
 
@@ -289,7 +362,17 @@
                 preview.innerHTML = blankPreview();
             }
 
-            fillForm('subcategory-form', sub);
+            fillForm('subcategory-form', {
+                name: sub.name,
+                category_id: sub.category_id,
+                status: sub.status,
+                display_order: sub.display_order,
+                is_active: sub.is_active,
+                meta_title: sub.meta_title,
+                meta_description: sub.meta_description,
+            });
+            ensureDescriptionEditor();
+            RichEditor.setValue('subcategory-description', sub.description || '');
 
             const cat = categories.find(c => c.id === sub.category_id);
             const link = document.getElementById('preview-link');
@@ -311,6 +394,11 @@
             const imagePath = document.getElementById('image-path').value;
             if (imagePath) data.image = imagePath;
             ['meta_title', 'meta_description'].forEach(k => { if (!data[k]) delete data[k]; });
+            if (data.description) {
+                data.description = RichEditor.sanitizeHtml(data.description);
+            } else {
+                delete data.description;
+            }
             try {
                 if (id) {
                     await subcategoriesAPI.update(id, data);

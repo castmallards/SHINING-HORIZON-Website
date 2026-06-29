@@ -15,7 +15,10 @@
         <div class="grid md:grid-cols-2 gap-10 items-center">
             <div>
                 <h1 class="text-4xl md:text-5xl font-bold mb-4">{{ subcategory.name }}</h1>
-                <p class="text-white/90 text-lg mb-6">{{ subcategory.description or category.description or '' }}</p>
+                {% set _hero = subcategory.description or category.description %}
+                {% if _hero %}
+                <div class="rich-content rich-content--light text-lg mb-6">{{ _hero | safe }}</div>
+                {% endif %}
                 <div class="flex flex-wrap gap-3">
                     <span class="bg-white/10 px-4 py-2 rounded-lg text-sm font-medium">Multiple Brands</span>
                     <span class="bg-white/10 px-4 py-2 rounded-lg text-sm font-medium">All Configurations</span>

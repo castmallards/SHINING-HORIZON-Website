@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import Optional
 
 from ..database import get_db
 from ..models._common import ContentStatus
@@ -19,10 +19,12 @@ def _client_ip(request: Request) -> Optional[str]:
     return request.client.host if request.client else None
 
 
-@router.get("/", response_model=List[CategoryResponse])
+@router.get("/")
 def get_categories(
     include_inactive: bool = Query(True),
     status: Optional[ContentStatus] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=500),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -31,8 +33,15 @@ def get_categories(
         query = query.filter(Category.is_active == True)  # noqa: E712
     if status is not None:
         query = query.filter(Category.status == status)
-    rows = query.order_by(Category.display_order, Category.name).all()
-    return [CategoryService.get_with_counts(db, c) for c in rows]
+    total = query.count()
+    rows = (
+        query.order_by(Category.display_order, Category.name)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    items = [CategoryService.get_with_counts(db, c) for c in rows]
+    return {"items": items, "total": total, "skip": skip, "limit": limit}
 
 
 @router.get("/{category_id}", response_model=CategoryResponse)

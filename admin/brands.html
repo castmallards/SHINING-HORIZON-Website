@@ -7,6 +7,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="/static/logo/Shinning_Horizon_logo.png" type="image/png">
     <link rel="stylesheet" href="assets/css/style.css">
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
 </head>
 <body>
     <aside class="sidebar" id="admin-sidebar">
@@ -54,7 +56,7 @@
                 </div>
                 <div class="card-body">
                     <div class="filters" style="margin-bottom: 12px;">
-                        <select id="filter-status" class="filter-select" onchange="loadBrands()">
+                        <select id="filter-status" class="filter-select" onchange="pageSkip = 0; loadBrands()">
                             <option value="">All Statuses</option>
                             <option value="published">Published</option>
                             <option value="draft">Draft</option>
@@ -64,6 +66,7 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
+                                    <th class="col-row-num num">#</th>
                                     <th class="col-img" style="width:8%;">Logo</th>
                                     <th style="width:22%;">Name</th>
                                     <th style="width:16%;">Country</th>
@@ -73,9 +76,26 @@
                                 </tr>
                             </thead>
                             <tbody id="brands-table">
-                                <tr><td colspan="6"><div class="loading"><div class="spinner"></div></div></td></tr>
+                                <tr><td colspan="7"><div class="loading"><div class="spinner"></div></div></td></tr>
                             </tbody>
                         </table>
+                    </div>
+                    <div id="pagination" style="display:flex; align-items:center; justify-content:space-between; margin-top:14px; flex-wrap:wrap; gap:10px;">
+                        <small id="pagination-info" style="color:#64748b;"></small>
+                        <div class="pagination-controls">
+                            <label class="pagination-page-size">
+                                Per page
+                                <select id="page-size" onchange="onPageSizeChange()">
+                                    <option value="10">10</option>
+                                    <option value="25" selected>25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </label>
+                            <button class="btn btn-sm btn-secondary" id="pg-prev" onclick="goPage(-1)">Previous</button>
+                            <span id="pagination-page" style="font-size:0.8125rem; color:#64748b; min-width:5rem; text-align:center;"></span>
+                            <button class="btn btn-sm btn-secondary" id="pg-next" onclick="goPage(1)">Next</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -124,7 +144,9 @@
                         <h4>Brand details</h4>
                         <div class="form-group">
                             <label class="form-label">Description</label>
-                            <textarea name="description" class="form-textarea" placeholder="A short description of the brand"></textarea>
+                            <p style="color:#64748b; font-size:0.8125rem; margin: 0 0 8px;">Headings, lists, bold, and links for the brand page.</p>
+                            <textarea name="description" id="brand-description" class="form-textarea"></textarea>
+                            <div id="brand-description-editor"></div>
                         </div>
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                             <div class="form-group">
@@ -163,16 +185,38 @@
     <script src="assets/js/auth.js"></script>
     <script src="assets/js/api.js"></script>
     <script src="assets/js/utils.js"></script>
+    <script src="assets/js/editor.js"></script>
     <script src="assets/js/image-drop.js?v=3"></script>
     <script>
         if (!requireAuth()) {}
 
         let brands = [];
+        let totalBrands = 0;
+        let pageSize = 25;
+        let pageSkip = 0;
+        let pendingFocusId = readFocusParam();
+        let descriptionEditorMounted = false;
+
+        function ensureDescriptionEditor() {
+            if (!descriptionEditorMounted) {
+                RichEditor.mount({
+                    textareaId: 'brand-description',
+                    containerId: 'brand-description-editor',
+                    placeholder: 'Describe this brand…',
+                });
+                descriptionEditorMounted = true;
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', async () => {
             initUserInfo();
             applyRoleGates();
             renderBlankPreview();
+            const savedPageSize = localStorage.getItem('brands-page-size');
+            if (savedPageSize) {
+                pageSize = parseInt(savedPageSize, 10) || 25;
+                document.getElementById('page-size').value = String(pageSize);
+            }
             const uploadZone = document.querySelector('#brand-form .image-upload');
             if (uploadZone) {
                 wireImageDropZone(uploadZone, {
@@ -181,6 +225,11 @@
                 });
             }
             await loadBrands();
+            if (pendingFocusId) {
+                highlightEntityRow(pendingFocusId);
+                clearFocusFromUrl();
+                pendingFocusId = null;
+            }
         });
 
         function blankPreview() {
@@ -191,11 +240,27 @@
         async function loadBrands() {
             try {
                 const status = document.getElementById('filter-status').value || null;
-                brands = await brandsAPI.getAll({ status });
+                const res = await brandsAPI.getAll({ status, skip: pageSkip, limit: pageSize });
+                const data = unwrapListResponse(res);
+                brands = data.items;
+                totalBrands = data.total;
                 renderBrands();
+                renderListPagination({ total: totalBrands, pageSkip, pageSize });
             } catch (error) {
                 showToast('Failed to load brands: ' + error.message, 'error');
             }
+        }
+
+        function onPageSizeChange() {
+            pageSize = parseInt(document.getElementById('page-size').value, 10) || 25;
+            localStorage.setItem('brands-page-size', String(pageSize));
+            pageSkip = 0;
+            loadBrands();
+        }
+
+        function goPage(direction) {
+            pageSkip = Math.max(0, pageSkip + direction * pageSize);
+            loadBrands();
         }
 
         function renderBrands() {
@@ -204,8 +269,9 @@
                 showEmptyState(tbody, 'No brands found');
                 return;
             }
-            tbody.innerHTML = brands.map(b => `
-                <tr>
+            tbody.innerHTML = brands.map((b, i) => `
+                <tr data-entity-id="${b.id}">
+                    <td class="col-row-num num">${listRowNumber(pageSkip, i)}</td>
                     <td class="col-img">
                         ${b.logo
                             ? `<img src="${adminImageUrl(b.logo, 'thumb')}" class="image-preview" alt="${escapeHtml(b.name)}">`
@@ -234,12 +300,21 @@
             renderBlankPreview();
             document.getElementById('preview-link').style.display = 'none';
             document.querySelector('select[name="status"]').value = 'draft';
+            ensureDescriptionEditor();
+            RichEditor.setValue('brand-description', '');
             openModal('brand-modal');
         }
 
         function editBrand(id) {
             const b = brands.find(brand => brand.id === id);
-            if (!b) return;
+            if (!b) {
+                brandsAPI.getById(id).then(editBrandFromData).catch((e) => showToast(e.message, 'error'));
+                return;
+            }
+            editBrandFromData(b);
+        }
+
+        function editBrandFromData(b) {
             document.getElementById('modal-title').textContent = 'Edit Brand';
             document.getElementById('brand-id').value = b.id;
             document.getElementById('logo-path').value = b.logo || '';
@@ -251,7 +326,16 @@
                 preview.innerHTML = blankPreview();
             }
 
-            fillForm('brand-form', b);
+            fillForm('brand-form', {
+                name: b.name,
+                status: b.status,
+                display_order: b.display_order,
+                is_active: b.is_active,
+                website_url: b.website_url,
+                country: b.country,
+            });
+            ensureDescriptionEditor();
+            RichEditor.setValue('brand-description', b.description || '');
 
             const link = document.getElementById('preview-link');
             link.href = previewUrl('brand', b.slug);
@@ -267,7 +351,12 @@
             delete data.id;
             const logoPath = document.getElementById('logo-path').value;
             if (logoPath) data.logo = logoPath;
-            ['description', 'website_url', 'country'].forEach(k => { if (data[k] === '') delete data[k]; });
+            ['website_url', 'country'].forEach(k => { if (data[k] === '') delete data[k]; });
+            if (data.description) {
+                data.description = RichEditor.sanitizeHtml(data.description);
+            } else {
+                delete data.description;
+            }
             try {
                 if (id) {
                     await brandsAPI.update(id, data);
@@ -284,6 +373,7 @@
         }
 
         async function uploadBrandLogo(file) {
+        async function uploadBrandLogo(file) {
             if (!file) return;
             const preview = document.getElementById('logo-preview');
             preview.innerHTML = '<div class="spinner"></div>';
@@ -296,6 +386,27 @@
                 preview.innerHTML = `<p style="color:#dc2626;">Upload failed: ${error.message}</p>`;
                 showToast('Upload failed', 'error');
             }
+        }
+
+        async function uploadBrandLogoFromUrl(url) {
+            if (!url) return;
+            const preview = document.getElementById('logo-preview');
+            preview.innerHTML = '<div class="spinner"></div>';
+            try {
+                const result = await uploadAPI.uploadImageFromUrl(url, 'brands');
+                document.getElementById('logo-path').value = result.path;
+                preview.innerHTML = `<img src="${adminImageUrl(result.path, 'card')}" style="max-width:100%; max-height:150px; border-radius:8px;">`;
+                showToast('Logo imported');
+            } catch (error) {
+                preview.innerHTML = `<p style="color:#dc2626;">Import failed: ${error.message}</p>`;
+                showToast('Import failed', 'error');
+            }
+        }
+
+        async function handleLogoUpload(input) {
+            const file = input.files?.[0];
+            if (file) await uploadBrandLogo(file);
+            input.value = '';
         }
 
         async function uploadBrandLogoFromUrl(url) {

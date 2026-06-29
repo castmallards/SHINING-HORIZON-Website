@@ -100,6 +100,7 @@
                         <table class="data-table">
                             <thead>
                                 <tr>
+                                    <th class="col-row-num num">#</th>
                                     <th style="width:3%;"><input type="checkbox" id="select-all" onchange="toggleAll(this.checked)"></th>
                                     <th style="width:7%;">Image</th>
                                     <th style="width:22%;">Name / Part No.</th>
@@ -110,7 +111,7 @@
                                 </tr>
                             </thead>
                             <tbody id="products-table">
-                                <tr><td colspan="7"><div class="loading"><div class="spinner"></div></div></td></tr>
+                                <tr><td colspan="8"><div class="loading"><div class="spinner"></div></div></td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -203,6 +204,7 @@
 
                     <div class="form-group">
                         <label class="form-label">Full Description</label>
+                        <p style="color:#64748b; font-size:0.8125rem; margin: 0 0 8px;">Headings, lists, bold, links, and more.</p>
                         <textarea name="description" id="product-description" class="form-textarea"></textarea>
                         <div id="description-editor"></div>
                     </div>
@@ -330,6 +332,104 @@
         };
 
         const search = debounce(() => { pageSkip = 0; reload(); }, 300);
+
+        function syncGapToUrl() {
+            const params = new URLSearchParams(window.location.search);
+            if (activeGap) params.set('gap', activeGap);
+            else params.delete('gap');
+            const qs = params.toString();
+            history.replaceState({}, '', qs ? `products.html?${qs}` : 'products.html');
+        }
+
+        function syncGapFilterUI() {
+            const gapSelect = document.getElementById('filter-gap');
+            if (gapSelect) gapSelect.value = activeGap || '';
+            updateGapBanner();
+        }
+
+        function readUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            activeGap = params.get('gap') || '';
+            const status = params.get('status');
+            if (status) document.getElementById('filter-status').value = status;
+            const focus = params.get('focus');
+            pendingFocusId = focus ? parseInt(focus, 10) : null;
+            if (pendingFocusId && Number.isNaN(pendingFocusId)) pendingFocusId = null;
+            syncGapFilterUI();
+        }
+
+        function onGapFilterChange() {
+            activeGap = document.getElementById('filter-gap').value || '';
+            pageSkip = 0;
+            syncGapToUrl();
+            syncGapFilterUI();
+            reload();
+        }
+
+        function listQueryParams() {
+            return {
+                category_id: document.getElementById('filter-category').value || null,
+                subcategory_id: document.getElementById('filter-subcategory').value || null,
+                brand_id: document.getElementById('filter-brand').value || null,
+                status: document.getElementById('filter-status').value || null,
+                search: document.getElementById('filter-search').value || null,
+                gap: activeGap || null,
+            };
+        }
+
+        function updateGapBanner() {
+            const banner = document.getElementById('gap-filter-banner');
+            const text = document.getElementById('gap-filter-text');
+            if (!activeGap) {
+                banner.classList.add('hidden');
+                return;
+            }
+            const label = GAP_LABELS[activeGap] || activeGap.replace(/_/g, ' ');
+            const status = document.getElementById('filter-status').value;
+            text.textContent = status === 'published'
+                ? `Showing published products ${label}.`
+                : `Showing products ${label}.`;
+            banner.classList.remove('hidden');
+        }
+
+        function clearGapFilter() {
+            activeGap = '';
+            pageSkip = 0;
+            syncGapToUrl();
+            syncGapFilterUI();
+            reload();
+        }
+
+        function onPageSizeChange() {
+            pageSize = parseInt(document.getElementById('page-size').value, 10) || 25;
+            localStorage.setItem('products-page-size', String(pageSize));
+            pageSkip = 0;
+            reload();
+        }
+
+        function highlightProductRow(productId) {
+            document.querySelectorAll('tr.row-focused').forEach((row) => row.classList.remove('row-focused'));
+            const row = document.querySelector(`tr[data-product-id="${productId}"]`);
+            if (row) {
+                row.classList.add('row-focused');
+                row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+
+        async function goToProductPage(productId) {
+            try {
+                const pos = await productsAPI.getListPosition(productId, {
+                    ...listQueryParams(),
+                    limit: pageSize,
+                });
+                pageSkip = pos.skip;
+                await reload();
+                highlightProductRow(productId);
+            } catch (e) {
+                showToast(e.message, 'error');
+                await reload();
+            }
+        }
 
         function syncGapToUrl() {
             const params = new URLSearchParams(window.location.search);
@@ -656,7 +756,7 @@
         }
 
         async function loadCategories() {
-            categories = await categoriesAPI.getAll();
+            categories = unwrapListResponse(await categoriesAPI.getAll()).items;
             const filterSelect = document.getElementById('filter-category');
             filterSelect.innerHTML = '<option value="">All Categories</option>' +
                 categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
@@ -666,7 +766,7 @@
         }
 
         async function loadBrands() {
-            brands = await brandsAPI.getAll();
+            brands = unwrapListResponse(await brandsAPI.getAll()).items;
             const filterSelect = document.getElementById('filter-brand');
             filterSelect.innerHTML = '<option value="">All Brands</option>' +
                 brands.map(b => `<option value="${b.id}">${escapeHtml(b.name)}</option>`).join('');
@@ -681,7 +781,7 @@
             if (categoryId) {
                 const cat = categories.find(c => c.id == categoryId);
                 if (cat && cat.type === 'detailed') {
-                    const subs = await subcategoriesAPI.getAll(categoryId);
+                    const subs = unwrapListResponse(await subcategoriesAPI.getAll(categoryId)).items;
                     subcatSelect.innerHTML = '<option value="">All Subcategories</option>' +
                         subs.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
                     subcatSelect.style.display = 'block';
@@ -703,7 +803,7 @@
             if (categoryId) {
                 const cat = categories.find(c => c.id == categoryId);
                 if (cat && cat.type === 'detailed') {
-                    const subs = await subcategoriesAPI.getAll(categoryId);
+                    const subs = unwrapListResponse(await subcategoriesAPI.getAll(categoryId)).items;
                     subcatSelect.innerHTML = '<option value="">Select Subcategory</option>' +
                         subs.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
                     subcatGroup.style.display = '';
@@ -742,8 +842,9 @@
                 updateBulkBar();
                 return;
             }
-            tbody.innerHTML = products.map(p => `
+            tbody.innerHTML = products.map((p, i) => `
                 <tr data-product-id="${p.id}">
+                    <td class="col-row-num num">${listRowNumber(pageSkip, i)}</td>
                     <td><input type="checkbox" class="row-check" data-id="${p.id}" ${selectedIds.has(p.id) ? 'checked' : ''} onchange="toggleRow(${p.id}, this.checked)"></td>
                     <td>
                         ${p.image
@@ -889,6 +990,7 @@
             document.getElementById('product-id').value = '';
             document.getElementById('image-path').value = '';
             document.getElementById('image-url-import').value = '';
+            document.getElementById('image-url-import').value = '';
             document.getElementById('subcategory-group').style.display = 'none';
             renderBlankPreview();
             document.getElementById('preview-link').style.display = 'none';
@@ -974,14 +1076,7 @@
 
             // Strip inline background-color and color styles injected by Quill's dark-theme detection
             if (data.description) {
-                const tmp = document.createElement('div');
-                tmp.innerHTML = data.description;
-                tmp.querySelectorAll('[style]').forEach(el => {
-                    el.style.removeProperty('background-color');
-                    el.style.removeProperty('color');
-                    if (!el.getAttribute('style').trim()) el.removeAttribute('style');
-                });
-                data.description = tmp.innerHTML;
+                data.description = RichEditor.sanitizeHtml(data.description);
             }
 
             try {

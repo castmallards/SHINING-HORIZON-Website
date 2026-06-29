@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import Optional
 
 from ..database import get_db
 from ..models._common import ContentStatus
@@ -19,11 +19,13 @@ def _client_ip(request: Request) -> Optional[str]:
     return request.client.host if request.client else None
 
 
-@router.get("/", response_model=List[SubcategoryResponse])
+@router.get("/")
 def get_subcategories(
     category_id: Optional[int] = Query(None),
     include_inactive: bool = Query(True),
     status: Optional[ContentStatus] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=500),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -34,8 +36,15 @@ def get_subcategories(
         query = query.filter(Subcategory.is_active == True)  # noqa: E712
     if status is not None:
         query = query.filter(Subcategory.status == status)
-    rows = query.order_by(Subcategory.display_order, Subcategory.name).all()
-    return [SubcategoryService.get_with_counts(db, s) for s in rows]
+    total = query.count()
+    rows = (
+        query.order_by(Subcategory.display_order, Subcategory.name)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    items = [SubcategoryService.get_with_counts(db, s) for s in rows]
+    return {"items": items, "total": total, "skip": skip, "limit": limit}
 
 
 @router.get("/{subcategory_id}", response_model=SubcategoryResponse)

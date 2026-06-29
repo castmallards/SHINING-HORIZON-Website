@@ -90,6 +90,7 @@ class SubcategoryService:
             entity_label=subcategory.name,
             user_id=actor_id,
             ip_address=ip,
+            after=snapshot(subcategory, _AUDIT_FIELDS),
         )
         return subcategory
 

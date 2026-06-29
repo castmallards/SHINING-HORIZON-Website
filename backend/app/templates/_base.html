@@ -83,6 +83,22 @@
         .brand-slide { transition: all 0.3s ease; }
         .brand-slide:hover { transform: translateY(-5px); border-color: #0088cc; box-shadow: 0 10px 25px rgba(0, 136, 204, 0.15); }
 
+        /* Rich HTML from admin Quill editor */
+        .rich-content { line-height: 1.75; }
+        .rich-content * { background-color: transparent !important; }
+        .rich-content p { margin-bottom: 0.875rem; }
+        .rich-content p:last-child { margin-bottom: 0; }
+        .rich-content ul, .rich-content ol { padding-left: 1.5rem; margin-bottom: 0.875rem; }
+        .rich-content li { margin-bottom: 0.3rem; }
+        .rich-content strong { font-weight: 600; }
+        .rich-content h1, .rich-content h2, .rich-content h3 { font-weight: 700; margin: 1rem 0 0.5rem; }
+        .rich-content.rich-content--light { color: rgba(255, 255, 255, 0.92); }
+        .rich-content.rich-content--light * { color: inherit !important; }
+        .rich-content.rich-content--light strong,
+        .rich-content.rich-content--light h1,
+        .rich-content.rich-content--light h2,
+        .rich-content.rich-content--light h3 { color: #fff !important; }
+
         /* ── Product card multi-image carousel ─────────────────────── */
         .card-carousel { position: relative; }
         .card-arrow {
