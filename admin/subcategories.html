@@ -126,10 +126,6 @@
                             <div class="select-with-action" data-quick-add="category" data-quick-add-label="New Category">
                                 <select name="category_id" id="modal-category" class="form-select" required></select>
                             </div>
-                            <label class="form-label" for="modal-category">Category *</label>
-                            <div class="select-with-action" data-quick-add="category" data-quick-add-label="New Category">
-                                <select name="category_id" id="modal-category" class="form-select" required></select>
-                            </div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Status *</label>
@@ -377,7 +373,7 @@
             const cat = categories.find(c => c.id === sub.category_id);
             const link = document.getElementById('preview-link');
             if (cat) {
-                link.href = `/category/${cat.slug}/${sub.slug}`;
+                link.href = previewUrl('subcategory', `${cat.slug}/${sub.slug}`, sub.status);
                 link.style.display = '';
             } else {
                 link.style.display = 'none';
@@ -392,13 +388,11 @@
             const data = getFormData('subcategory-form');
             delete data.id;
             const imagePath = document.getElementById('image-path').value;
-            if (imagePath) data.image = imagePath;
-            ['meta_title', 'meta_description'].forEach(k => { if (!data[k]) delete data[k]; });
-            if (data.description) {
-                data.description = RichEditor.sanitizeHtml(data.description);
-            } else {
-                delete data.description;
-            }
+            data.image = imagePath || null;
+            ['meta_title', 'meta_description'].forEach(k => { if (!data[k]) data[k] = null; });
+            data.description = data.description
+                ? RichEditor.sanitizeHtml(data.description)
+                : null;
             try {
                 if (id) {
                     await subcategoriesAPI.update(id, data);
