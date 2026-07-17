@@ -12,7 +12,10 @@ from ..schemas.subcategory import SubcategoryCreate, SubcategoryUpdate
 from ..cache import invalidate_public
 from .audit import AuditService, snapshot
 
-_AUDIT_FIELDS = ("name", "slug", "category_id", "status", "is_active", "display_order", "image", "description")
+_AUDIT_FIELDS = (
+    "name", "slug", "category_id", "status", "is_active", "display_order",
+    "image", "description", "meta_title", "meta_description",
+)
 
 class SubcategoryService:
     @staticmethod

@@ -386,16 +386,13 @@
             delete data.id;
 
             const imagePath = document.getElementById('image-path').value;
-            if (imagePath) data.image = imagePath;
-            // Empty meta fields should clear, not stay as "" — convert to null.
-            ['meta_title', 'meta_description'].forEach(k => {
-                if (data[k] === '' || data[k] === undefined) delete data[k];
+            data.image = imagePath || null;
+            ['meta_title', 'meta_description', 'description', 'hero_title'].forEach(k => {
+                if (!data[k]) data[k] = null;
             });
-            if (data.hero_description) {
-                data.hero_description = RichEditor.sanitizeHtml(data.hero_description);
-            } else {
-                delete data.hero_description;
-            }
+            data.hero_description = data.hero_description
+                ? RichEditor.sanitizeHtml(data.hero_description)
+                : null;
 
             try {
                 if (id) {
@@ -425,27 +422,6 @@
                 preview.innerHTML = `<p style="color:#dc2626;">Upload failed: ${error.message}</p>`;
                 showToast('Upload failed', 'error');
             }
-        }
-
-        async function uploadCategoryImageFromUrl(url) {
-            if (!url) return;
-            const preview = document.getElementById('image-preview');
-            preview.innerHTML = '<div class="spinner"></div>';
-            try {
-                const result = await uploadAPI.uploadImageFromUrl(url, 'categories');
-                document.getElementById('image-path').value = result.path;
-                preview.innerHTML = `<img src="${adminImageUrl(result.path, 'card')}" style="max-width:100%; max-height:150px; border-radius:8px;">`;
-                showToast('Image imported');
-            } catch (error) {
-                preview.innerHTML = `<p style="color:#dc2626;">Import failed: ${error.message}</p>`;
-                showToast('Import failed', 'error');
-            }
-        }
-
-        async function handleImageUpload(input) {
-            const file = input.files?.[0];
-            if (file) await uploadCategoryImage(file);
-            input.value = '';
         }
 
         async function uploadCategoryImageFromUrl(url) {

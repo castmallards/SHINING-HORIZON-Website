@@ -431,104 +431,6 @@
             }
         }
 
-        function syncGapToUrl() {
-            const params = new URLSearchParams(window.location.search);
-            if (activeGap) params.set('gap', activeGap);
-            else params.delete('gap');
-            const qs = params.toString();
-            history.replaceState({}, '', qs ? `products.html?${qs}` : 'products.html');
-        }
-
-        function syncGapFilterUI() {
-            const gapSelect = document.getElementById('filter-gap');
-            if (gapSelect) gapSelect.value = activeGap || '';
-            updateGapBanner();
-        }
-
-        function readUrlParams() {
-            const params = new URLSearchParams(window.location.search);
-            activeGap = params.get('gap') || '';
-            const status = params.get('status');
-            if (status) document.getElementById('filter-status').value = status;
-            const focus = params.get('focus');
-            pendingFocusId = focus ? parseInt(focus, 10) : null;
-            if (pendingFocusId && Number.isNaN(pendingFocusId)) pendingFocusId = null;
-            syncGapFilterUI();
-        }
-
-        function onGapFilterChange() {
-            activeGap = document.getElementById('filter-gap').value || '';
-            pageSkip = 0;
-            syncGapToUrl();
-            syncGapFilterUI();
-            reload();
-        }
-
-        function listQueryParams() {
-            return {
-                category_id: document.getElementById('filter-category').value || null,
-                subcategory_id: document.getElementById('filter-subcategory').value || null,
-                brand_id: document.getElementById('filter-brand').value || null,
-                status: document.getElementById('filter-status').value || null,
-                search: document.getElementById('filter-search').value || null,
-                gap: activeGap || null,
-            };
-        }
-
-        function updateGapBanner() {
-            const banner = document.getElementById('gap-filter-banner');
-            const text = document.getElementById('gap-filter-text');
-            if (!activeGap) {
-                banner.classList.add('hidden');
-                return;
-            }
-            const label = GAP_LABELS[activeGap] || activeGap.replace(/_/g, ' ');
-            const status = document.getElementById('filter-status').value;
-            text.textContent = status === 'published'
-                ? `Showing published products ${label}.`
-                : `Showing products ${label}.`;
-            banner.classList.remove('hidden');
-        }
-
-        function clearGapFilter() {
-            activeGap = '';
-            pageSkip = 0;
-            syncGapToUrl();
-            syncGapFilterUI();
-            reload();
-        }
-
-        function onPageSizeChange() {
-            pageSize = parseInt(document.getElementById('page-size').value, 10) || 25;
-            localStorage.setItem('products-page-size', String(pageSize));
-            pageSkip = 0;
-            reload();
-        }
-
-        function highlightProductRow(productId) {
-            document.querySelectorAll('tr.row-focused').forEach((row) => row.classList.remove('row-focused'));
-            const row = document.querySelector(`tr[data-product-id="${productId}"]`);
-            if (row) {
-                row.classList.add('row-focused');
-                row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-            }
-        }
-
-        async function goToProductPage(productId) {
-            try {
-                const pos = await productsAPI.getListPosition(productId, {
-                    ...listQueryParams(),
-                    limit: pageSize,
-                });
-                pageSkip = pos.skip;
-                await reload();
-                highlightProductRow(productId);
-            } catch (e) {
-                showToast(e.message, 'error');
-                await reload();
-            }
-        }
-
         document.addEventListener('DOMContentLoaded', async () => {
             initUserInfo();
             applyRoleGates();
@@ -1045,7 +947,7 @@
             specsWidget.setValue(Array.isArray(p.specifications) ? p.specifications : []);
 
             const link = document.getElementById('preview-link');
-            link.href = previewUrl('product', p.slug);
+            link.href = previewUrl('product', p.slug, p.status);
             link.style.display = '';
 
             openModal('product-modal');
@@ -1072,12 +974,14 @@
             try { data.gallery = JSON.parse(document.getElementById('gallery-input').value || '[]'); }
             catch (e) { data.gallery = []; }
 
-            ['meta_title', 'meta_description', 'datasheet_url'].forEach(k => { if (data[k] === '') delete data[k]; });
+            ['meta_title', 'meta_description', 'datasheet_url', 'short_description'].forEach(k => {
+                if (!data[k]) data[k] = null;
+            });
 
             // Strip inline background-color and color styles injected by Quill's dark-theme detection
-            if (data.description) {
-                data.description = RichEditor.sanitizeHtml(data.description);
-            }
+            data.description = data.description
+                ? RichEditor.sanitizeHtml(data.description)
+                : null;
 
             try {
                 if (id) {

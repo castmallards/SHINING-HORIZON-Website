@@ -338,7 +338,7 @@
             RichEditor.setValue('brand-description', b.description || '');
 
             const link = document.getElementById('preview-link');
-            link.href = previewUrl('brand', b.slug);
+            link.href = previewUrl('brand', b.slug, b.status);
             link.style.display = '';
 
             openModal('brand-modal');
@@ -350,13 +350,11 @@
             const data = getFormData('brand-form');
             delete data.id;
             const logoPath = document.getElementById('logo-path').value;
-            if (logoPath) data.logo = logoPath;
-            ['website_url', 'country'].forEach(k => { if (data[k] === '') delete data[k]; });
-            if (data.description) {
-                data.description = RichEditor.sanitizeHtml(data.description);
-            } else {
-                delete data.description;
-            }
+            data.logo = logoPath || null;
+            ['website_url', 'country'].forEach(k => { if (!data[k]) data[k] = null; });
+            data.description = data.description
+                ? RichEditor.sanitizeHtml(data.description)
+                : null;
             try {
                 if (id) {
                     await brandsAPI.update(id, data);
@@ -385,27 +383,6 @@
                 preview.innerHTML = `<p style="color:#dc2626;">Upload failed: ${error.message}</p>`;
                 showToast('Upload failed', 'error');
             }
-        }
-
-        async function uploadBrandLogoFromUrl(url) {
-            if (!url) return;
-            const preview = document.getElementById('logo-preview');
-            preview.innerHTML = '<div class="spinner"></div>';
-            try {
-                const result = await uploadAPI.uploadImageFromUrl(url, 'brands');
-                document.getElementById('logo-path').value = result.path;
-                preview.innerHTML = `<img src="${adminImageUrl(result.path, 'card')}" style="max-width:100%; max-height:150px; border-radius:8px;">`;
-                showToast('Logo imported');
-            } catch (error) {
-                preview.innerHTML = `<p style="color:#dc2626;">Import failed: ${error.message}</p>`;
-                showToast('Import failed', 'error');
-            }
-        }
-
-        async function handleLogoUpload(input) {
-            const file = input.files?.[0];
-            if (file) await uploadBrandLogo(file);
-            input.value = '';
         }
 
         async function uploadBrandLogoFromUrl(url) {

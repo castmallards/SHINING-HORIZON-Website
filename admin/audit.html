@@ -208,7 +208,11 @@
             if (!iso) return { date: '—', time: '—' };
             const d = new Date(iso);
             return {
-                date: d.toLocaleDateString('en-GB', { dateStyle: 'medium' }),
+                date: d.toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                }),
                 time: d.toLocaleTimeString('en-GB', { timeStyle: 'short' }),
             };
         }

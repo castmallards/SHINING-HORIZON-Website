@@ -12,7 +12,10 @@ from ..schemas.category import CategoryCreate, CategoryUpdate
 from ..cache import invalidate_public
 from .audit import AuditService, snapshot
 
-_AUDIT_FIELDS = ("name", "slug", "type", "status", "is_active", "show_on_home", "display_order", "image", "description")
+_AUDIT_FIELDS = (
+    "name", "slug", "type", "status", "is_active", "show_on_home", "display_order",
+    "image", "description", "hero_title", "hero_description", "meta_title", "meta_description",
+)
 
 class CategoryService:
     @staticmethod
