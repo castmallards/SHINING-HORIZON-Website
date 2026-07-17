@@ -7,6 +7,7 @@ and renders a Jinja2 template.
 from __future__ import annotations
 
 import os
+import re
 from datetime import datetime
 from typing import Optional
 
@@ -31,6 +32,17 @@ TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "..", "templates")
 templates = Jinja2Templates(directory=TEMPLATE_DIR)
 templates.env.filters["variant"] = variant_url
 templates.env.filters["jsonld"] = seo.to_script
+
+_HTML_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _plain_meta(text: Optional[str], fallback: str = "") -> str:
+    """Strip HTML from rich-text fields before using them as meta descriptions."""
+    if not text:
+        return fallback
+    plain = _HTML_TAG_RE.sub("", text)
+    plain = re.sub(r"\s+", " ", plain).strip()
+    return plain or fallback
 
 
 def _published(query, model):
@@ -398,7 +410,9 @@ def subcategory_detail(
             products=products_with_brands,
             footer_categories=_footer_categories(db),
             meta_title=subcategory.meta_title or f"{subcategory.name} — {category.name}",
-            meta_description=subcategory.meta_description or subcategory.description or category.description,
+            meta_description=_plain_meta(
+                subcategory.meta_description or subcategory.description or category.description,
+            ),
             jsonld_blocks=[sub_breadcrumb],
         ),
     )
@@ -478,7 +492,10 @@ def brand_detail(slug: str, request: Request, db: Session = Depends(get_db)):
             brands=[],
             footer_categories=_footer_categories(db),
             meta_title=f"{brand.name} — Shining Horizon Trading",
-            meta_description=brand.description or f"Products from {brand.name} available through Shining Horizon Trading.",
+            meta_description=_plain_meta(
+                brand.description,
+                f"Products from {brand.name} available through Shining Horizon Trading.",
+            ),
             jsonld_blocks=[brand_breadcrumb],
         ),
     )
@@ -565,7 +582,9 @@ def product_detail(slug: str, request: Request, db: Session = Depends(get_db)):
             related_products=related_products,
             footer_categories=_footer_categories(db),
             meta_title=product.meta_title or f"{product.name} — Shining Horizon Trading",
-            meta_description=product.meta_description or product.short_description or product.description,
+            meta_description=_plain_meta(
+                product.meta_description or product.short_description or product.description,
+            ),
             canonical_url=canonical,
             og_image=hero_image_abs,
             og_type="product",
